@@ -17,7 +17,10 @@ import com.github.tomakehurst.wiremock.http.Request;
 import com.github.tomakehurst.wiremock.http.Response;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 
-public class ValidationResponseFilter implements ResponseTransformerV2 {
+/**
+ * WireMock response transformer that validates request and response against OpenAPI file.
+ */
+public class ValidationResponseTransformer implements ResponseTransformerV2 {
 
     private static final String DEFAULT_OPENAPI_FILE_PATH = "/var/wiremock/openapi.json";
 
