@@ -8,8 +8,30 @@
   <artifactId>wiremock-openapi-validation-extension</artifactId>
   <version>1.0-SNAPSHOT</version>
 
-  <name>wiremock-openapi-validation-extension</name>
+  <name>WireMock OpenAPI validation extension</name>
+  <description>The extension allows to validate request and response against OpenAPI file.</description>
   <url>https://github.com/dimabarbul/wiremock-openapi-validation-extension</url>
+
+  <licenses>
+    <license>
+      <name>MIT License</name>
+      <url>http://www.opensource.org/licenses/mit-license.php</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <name>Dmitriy Barbul</name>
+      <email>dimabarbul@gmail.com</email>
+      <organizationUrl>https://github.com/dimabarbul</organizationUrl>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:git://github.com/dimabarbul/wiremock-openapi-validation-extension.git</connection>
+    <developerConnection>scm:git:git://github.com/dimabarbul/wiremock-openapi-validation-extension.git</developerConnection>
+    <url>https://github.com/dimabarbul/wiremock-openapi-validation-extension</url>
+  </scm>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -128,6 +150,15 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.sonatype.central</groupId>
+        <artifactId>central-publishing-maven-plugin</artifactId>
+        <version>0.5.0</version>
+        <extensions>true</extensions>
+        <configuration>
+          <publishingServerId>ossrh</publishingServerId>
+        </configuration>
       </plugin>
     </plugins>
   </build>
