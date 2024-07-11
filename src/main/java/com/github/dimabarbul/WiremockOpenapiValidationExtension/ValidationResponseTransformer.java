@@ -2,6 +2,7 @@ package com.github.dimabarbul.WiremockOpenapiValidationExtension;
 
 import java.net.URI;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.atlassian.oai.validator.OpenApiInteractionValidator;
@@ -73,7 +74,10 @@ public class ValidationResponseTransformer implements ResponseTransformerV2 {
     }
 
     private static String getOpenapiFilePath() {
-        return System.getProperty("openapi_validation_filepath", DEFAULT_OPENAPI_FILE_PATH);
+        return Optional.ofNullable(System.getProperty("openapi_validation_filepath"))
+                .orElse(
+                        Optional.ofNullable(System.getenv("OPENAPI_VALIDATION_FILEPATH"))
+                                .orElse(DEFAULT_OPENAPI_FILE_PATH));
     }
 
     private static final class ErrorResponseBuilder {

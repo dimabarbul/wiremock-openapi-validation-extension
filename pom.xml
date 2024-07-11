@@ -99,6 +99,7 @@
         <executions>
           <execution>
             <id>attach-sources</id>
+            <phase>verify</phase>
             <goals>
               <goal>jar</goal>
             </goals>
@@ -140,6 +141,7 @@
             <descriptorRef>jar-with-dependencies</descriptorRef>
           </descriptorRefs>
           <appendAssemblyId>false</appendAssemblyId>
+          <attach>false</attach>
         </configuration>
         <executions>
           <execution>
@@ -158,6 +160,7 @@
         <extensions>true</extensions>
         <configuration>
           <publishingServerId>ossrh</publishingServerId>
+          <waitUntil>uploaded</waitUntil>
         </configuration>
       </plugin>
     </plugins>
