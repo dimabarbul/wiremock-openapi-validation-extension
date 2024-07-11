@@ -1,4 +1,4 @@
-package com.github.dimabarbul.WiremockOpenapiValidationExtension;
+package io.github.dimabarbul.WiremockOpenapiValidationExtension;
 
 import java.net.URI;
 import java.util.Map;
