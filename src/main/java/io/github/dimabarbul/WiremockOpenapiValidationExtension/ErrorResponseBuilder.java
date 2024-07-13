@@ -1,5 +1,6 @@
 package io.github.dimabarbul.WiremockOpenapiValidationExtension;
 
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.atlassian.oai.validator.report.ValidationReport;
@@ -8,7 +9,8 @@ import com.github.tomakehurst.wiremock.http.HttpHeaders;
 import com.github.tomakehurst.wiremock.http.Response;
 
 final class ErrorResponseBuilder {
-    private static final int VALIDATION_FAILED_STATUS_CODE = 500;
+
+    private static final int VALIDATION_FAILED_STATUS_CODE = getValidationFailedStatusCode();
 
     public static Response buildResponse(final ValidationReport requestReport, final ValidationReport responseReport) {
         return Response.response()
@@ -18,7 +20,7 @@ final class ErrorResponseBuilder {
                 .build();
     }
 
-    private static String buildBody(final ValidationReport requestReport, final  ValidationReport responseReport) {
+    private static String buildBody(final ValidationReport requestReport, final ValidationReport responseReport) {
         return "<h1>Validation against OpenAPI failed</h1>\n" +
                 "<h2>Request Errors</h2>\n" +
                 getErrorsHtml(requestReport) +
@@ -35,5 +37,12 @@ final class ErrorResponseBuilder {
                                 .collect(Collectors.joining()) +
                         "</ul>\n" :
                 "<b>No errors</b>\n";
+    }
+
+    private static int getValidationFailedStatusCode() {
+        return Integer.parseInt(Optional.ofNullable(System.getProperty("openapi_validation_failed_status_code"))
+                .orElse(
+                        Optional.ofNullable(System.getenv("OPENAPI_VALIDATION_FAILED_STATUS_CODE"))
+                                .orElse("500")));
     }
 }
