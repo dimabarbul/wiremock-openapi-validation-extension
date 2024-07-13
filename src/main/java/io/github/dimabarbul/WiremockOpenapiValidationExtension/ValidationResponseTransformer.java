@@ -21,13 +21,16 @@ import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 public class ValidationResponseTransformer implements ResponseTransformerV2 {
 
     private static final String DEFAULT_OPENAPI_FILE_PATH = "/var/wiremock/openapi.json";
+    private static final int DEFAULT_FAILURE_STATUS_CODE = 500;
 
     private final OpenApiInteractionValidator validator;
+    private final int failureStatusCode;
 
     public ValidationResponseTransformer() {
         validator = OpenApiInteractionValidator
                 .createForSpecificationUrl(getOpenapiFilePath())
                 .build();
+        failureStatusCode = getFailureStatusCode();
     }
 
     @Override
@@ -41,7 +44,7 @@ public class ValidationResponseTransformer implements ResponseTransformerV2 {
         ValidationReport responseReport = validator.validateResponse(request.getPath(), request.getMethod(), convertResponse(response));
 
         if (requestReport.hasErrors() || responseReport.hasErrors()) {
-            return ErrorResponseBuilder.buildResponse(requestReport, responseReport);
+            return ErrorResponseBuilder.buildResponse(failureStatusCode, requestReport, responseReport);
         }
 
         return response;
@@ -76,9 +79,19 @@ public class ValidationResponseTransformer implements ResponseTransformerV2 {
     }
 
     private static String getOpenapiFilePath() {
-        return Optional.ofNullable(System.getProperty("openapi_validation_filepath"))
-                .orElse(
-                        Optional.ofNullable(System.getenv("OPENAPI_VALIDATION_FILEPATH"))
-                                .orElse(DEFAULT_OPENAPI_FILE_PATH));
+        return getParameter("openapi_validation_filepath")
+                .orElse(DEFAULT_OPENAPI_FILE_PATH);
+    }
+
+    private static int getFailureStatusCode() {
+        return getParameter("openapi_validation_failure_status_code")
+                .map(Integer::parseInt)
+                .orElse(DEFAULT_FAILURE_STATUS_CODE);
+    }
+
+    private static Optional<String> getParameter(final String name) {
+        return Optional.ofNullable(
+                Optional.ofNullable(System.getProperty(name.toLowerCase()))
+                    .orElse(System.getenv(name.toUpperCase())));
     }
 }

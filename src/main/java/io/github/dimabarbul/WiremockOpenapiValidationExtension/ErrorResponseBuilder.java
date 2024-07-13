@@ -1,21 +1,19 @@
 package io.github.dimabarbul.WiremockOpenapiValidationExtension;
 
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.atlassian.oai.validator.report.ValidationReport;
 import com.github.tomakehurst.wiremock.http.HttpHeader;
 import com.github.tomakehurst.wiremock.http.HttpHeaders;
 import com.github.tomakehurst.wiremock.http.Response;
+import com.google.common.net.MediaType;
 
 final class ErrorResponseBuilder {
 
-    private static final int VALIDATION_FAILED_STATUS_CODE = getValidationFailedStatusCode();
-
-    public static Response buildResponse(final ValidationReport requestReport, final ValidationReport responseReport) {
+    public static Response buildResponse(final int statusCode, final ValidationReport requestReport, final ValidationReport responseReport) {
         return Response.response()
-                .status(VALIDATION_FAILED_STATUS_CODE)
-                .headers(new HttpHeaders(new HttpHeader("Content-Type", "text/html")))
+                .status(statusCode)
+                .headers(new HttpHeaders(new HttpHeader("Content-Type", MediaType.HTML_UTF_8.toString())))
                 .body(buildBody(requestReport, responseReport))
                 .build();
     }
@@ -37,12 +35,5 @@ final class ErrorResponseBuilder {
                                 .collect(Collectors.joining()) +
                         "</ul>\n" :
                 "<b>No errors</b>\n";
-    }
-
-    private static int getValidationFailedStatusCode() {
-        return Integer.parseInt(Optional.ofNullable(System.getProperty("openapi_validation_failed_status_code"))
-                .orElse(
-                        Optional.ofNullable(System.getenv("OPENAPI_VALIDATION_FAILED_STATUS_CODE"))
-                                .orElse("500")));
     }
 }
