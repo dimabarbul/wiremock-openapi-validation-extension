@@ -30,7 +30,7 @@ public class ValidationResponseTransformer implements ResponseTransformerV2 {
     private static final Parameter PARAMETER_FAILURE_STATUS_CODE = new Parameter("openapi_validation_failure_status_code");
     private static final Parameter PARAMETER_IGNORE_ERRORS = new Parameter("openapi_validation_ignore_errors");
 
-    private static final String DEFAULT_OPENAPI_FILE_PATH = "/var/wiremock/openapi.json";
+    private static final String DEFAULT_OPENAPI_FILE_PATH = "/home/wiremock/openapi.json";
     private static final int DEFAULT_FAILURE_STATUS_CODE = 500;
 
     private final OpenApiInteractionValidator globalValidator;
