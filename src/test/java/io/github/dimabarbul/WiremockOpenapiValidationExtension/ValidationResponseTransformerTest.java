@@ -65,6 +65,7 @@ class ValidationResponseTransformerTest {
     public void beforeEach() {
         System.setProperty("openapi_validation_filepath", OPENAPI_FILE_PATH);
         System.clearProperty("openapi_validation_failure_status_code");
+        System.clearProperty("openapi_validation_ignore_errors");
     }
 
     @Test
@@ -314,6 +315,34 @@ class ValidationResponseTransformerTest {
         System.setProperty("openapi_validation_filepath", "some-non-existent-file");
         assertThatExceptionOfType(OpenApiInteractionValidator.ApiLoadException.class)
                 .isThrownBy(ValidationResponseTransformer::new);
+    }
+
+    @Test
+    void testIgnoreSpecificErrors() {
+        System.setProperty("openapi_validation_ignore_errors", "validation.request.body.schema.required,validation.response.status.unknown");
+
+        WireMockServer wm = new WireMockServer(wireMockConfig()
+                .httpServerFactory(factory)
+                .extensions(new ValidationResponseTransformer()));
+
+        DirectCallHttpServer server = factory.getHttpServer();
+
+        wm.stubFor(post(ADD_USER_URL)
+                .willReturn(aResponse()
+                        .withStatus(200)));
+
+        Response response = server.stubRequest(ImmutableRequest.create()
+                .withMethod(RequestMethod.POST)
+                .withAbsoluteUrl(wm.url(ADD_USER_URL))
+                .withHeader(CONTENT_TYPE_HEADER, MediaType.JSON_UTF_8.toString())
+                .withBody(JsonNodeFactory.instance.objectNode()
+                        .toString()
+                        .getBytes(StandardCharsets.UTF_8))
+                .build());
+
+        assertThat(response.getStatus())
+                .as("response should be successful, got body \"%s\"", response.getBodyAsString())
+                .isEqualTo(200);
     }
 
     void assertResponseFailedBecauseOfValidation(final Response response) {

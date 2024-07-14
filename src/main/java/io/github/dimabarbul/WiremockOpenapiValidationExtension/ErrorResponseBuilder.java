@@ -31,9 +31,13 @@ final class ErrorResponseBuilder {
         return report.hasErrors() ?
                 "<ul>\n" +
                         report.getMessages().stream().map(
-                                        m -> "\t<li>" + m.getMessage() + "</li>\n")
+                                        m -> "\t<li>" + getErrorHtml(m) + "</li>\n")
                                 .collect(Collectors.joining()) +
                         "</ul>\n" :
                 "<b>No errors</b>\n";
+    }
+
+    private static String getErrorHtml(final ValidationReport.Message message) {
+        return String.format("<i>[%s]</i> %s", message.getKey(), message.getMessage());
     }
 }

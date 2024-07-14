@@ -1,12 +1,17 @@
 package io.github.dimabarbul.WiremockOpenapiValidationExtension;
 
 import java.net.URI;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.atlassian.oai.validator.OpenApiInteractionValidator;
 import com.atlassian.oai.validator.model.SimpleRequest;
 import com.atlassian.oai.validator.model.SimpleResponse;
+import com.atlassian.oai.validator.report.LevelResolver;
 import com.atlassian.oai.validator.report.ValidationReport;
 import com.github.tomakehurst.wiremock.common.Urls;
 import com.github.tomakehurst.wiremock.extension.ResponseTransformerV2;
@@ -27,14 +32,24 @@ public class ValidationResponseTransformer implements ResponseTransformerV2 {
     private final int failureStatusCode;
 
     public ValidationResponseTransformer() {
-        validator = OpenApiInteractionValidator
-                .createForSpecificationUrl(getOpenapiFilePath())
-                .build();
         failureStatusCode = getFailureStatusCode();
+        Set<String> ignoredErrors = getIgnoredErrors();
+        OpenApiInteractionValidator.Builder validatorBuilder = OpenApiInteractionValidator
+                .createForSpecificationUrl(getOpenapiFilePath());
+        if (!ignoredErrors.isEmpty()) {
+            validatorBuilder = validatorBuilder.withLevelResolver(LevelResolver.create()
+                            .withLevels(ignoredErrors
+                                    .stream()
+                                    .collect(Collectors.toMap(
+                                            e -> e,
+                                            e -> ValidationReport.Level.INFO)))
+                    .build());
+        }
+        validator = validatorBuilder.build();
     }
 
     @Override
-    public Response transform(Response response, ServeEvent serveEvent) {
+    public Response transform(final Response response, final ServeEvent serveEvent) {
         if (!serveEvent.getWasMatched()) {
             return response;
         }
@@ -87,6 +102,12 @@ public class ValidationResponseTransformer implements ResponseTransformerV2 {
         return getParameter("openapi_validation_failure_status_code")
                 .map(Integer::parseInt)
                 .orElse(DEFAULT_FAILURE_STATUS_CODE);
+    }
+
+    private static Set<String> getIgnoredErrors() {
+        return getParameter("openapi_validation_ignore_errors")
+                .map(e -> Arrays.stream(e.split(",")).collect(Collectors.toSet()))
+                .orElse(new HashSet<>());
     }
 
     private static Optional<String> getParameter(final String name) {
