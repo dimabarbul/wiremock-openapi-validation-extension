@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
+import java.util.Map;
 import java.util.UUID;
 
 import org.apache.http.HttpStatus;
@@ -237,6 +238,13 @@ class ValidationResponseTransformerTest {
     }
 
     @Test
+    void testStartupFailureOnAbsentOpenApiFile() {
+        System.setProperty("openapi_validation_filepath", "some-non-existent-file");
+        assertThatExceptionOfType(OpenApiInteractionValidator.ApiLoadException.class)
+                .isThrownBy(ValidationResponseTransformer::new);
+    }
+
+    @Test
     void testGlobalCustomResponseCodeOnValidationFailure() {
         System.setProperty("openapi_validation_failure_status_code", "599");
         WireMockServer wm = new WireMockServer(getWireMockConfiguration());
@@ -252,18 +260,10 @@ class ValidationResponseTransformerTest {
     }
 
     @Test
-    void testStartupFailureOnAbsentOpenApiFile() {
-        System.setProperty("openapi_validation_filepath", "some-non-existent-file");
-        assertThatExceptionOfType(OpenApiInteractionValidator.ApiLoadException.class)
-                .isThrownBy(ValidationResponseTransformer::new);
-    }
-
-    @Test
     void testGloballyIgnoreSpecificErrors() {
         System.setProperty("openapi_validation_ignore_errors", "validation.request.body.schema.required,validation.response.status.unknown");
 
         WireMockServer wm = new WireMockServer(getWireMockConfiguration());
-
         DirectCallHttpServer server = factory.getHttpServer();
 
         wm.stubFor(post(ADD_USER_URL)
@@ -281,7 +281,6 @@ class ValidationResponseTransformerTest {
         System.setProperty("openapi_validation_validate_request", "false");
 
         WireMockServer wm = new WireMockServer(getWireMockConfiguration());
-
         DirectCallHttpServer server = factory.getHttpServer();
 
         wm.stubFor(post(ADD_USER_URL)
@@ -299,7 +298,6 @@ class ValidationResponseTransformerTest {
         System.setProperty("openapi_validation_validate_response", "false");
 
         WireMockServer wm = new WireMockServer(getWireMockConfiguration());
-
         DirectCallHttpServer server = factory.getHttpServer();
 
         wm.stubFor(get(GET_USERS_URL)
@@ -310,6 +308,169 @@ class ValidationResponseTransformerTest {
         assertThat(response.getStatus())
                 .as("response should be successful, because response should not be validated, got body \"%s\"", response.getBodyAsString())
                 .isEqualTo(HttpStatus.SC_NO_CONTENT);
+    }
+
+    @Test
+    void testCustomResponseCodeOnValidationFailure() {
+        int statusCode = 598;
+        wm.stubFor(get(UrlPattern.ANY)
+                .willReturn(noContent()
+                        .withTransformerParameter("openapiValidationFailureStatusCode", statusCode)));
+
+        Response response = server.stubRequest(getRequest(wm.url("/test")));
+
+        assertResponseFailedBecauseOfValidation(response, statusCode);
+    }
+
+    @Test
+    void testIgnoreErrors() {
+        wm.stubFor(post(ADD_USER_URL)
+                .willReturn(jsonResponse("{}", HttpStatus.SC_OK)
+                        .withTransformerParameter(
+                                "openapiValidationIgnoreErrors",
+                                Map.of(
+                                        "validation.request.body.schema.required", true,
+                                        "validation.response.status.unknown", true))));
+
+        Response response = server.stubRequest(postJsonRequest(wm.url(ADD_USER_URL), "{}"));
+
+        assertThat(response.getStatus())
+                .as("response should be successful, got body \"%s\"", response.getBodyAsString())
+                .isEqualTo(HttpStatus.SC_OK);
+    }
+
+    @Test
+    void testIgnoreSpecificErrorsCanBeAddedToGlobalList() {
+        System.setProperty("openapi_validation_ignore_errors", "validation.request.body.schema.required");
+
+        WireMockServer wm = new WireMockServer(getWireMockConfiguration());
+        DirectCallHttpServer server = factory.getHttpServer();
+
+        wm.stubFor(post(ADD_USER_URL)
+                .willReturn(jsonResponse("{}", HttpStatus.SC_OK)
+                        .withTransformerParameter(
+                                "openapiValidationIgnoreErrors",
+                                Map.of("validation.response.status.unknown", true))));
+
+        Response response = server.stubRequest(postJsonRequest(wm.url(ADD_USER_URL), "{}"));
+
+        assertThat(response.getStatus())
+                .as("response should be successful, got body \"%s\"", response.getBodyAsString())
+                .isEqualTo(HttpStatus.SC_OK);
+    }
+
+    @Test
+    void testGloballyIgnoredErrorCanBeEnabledWithTransformerParameters() {
+        System.setProperty("openapi_validation_ignore_errors", "validation.request.body.schema.required,validation.response.status.unknown");
+
+        WireMockServer wm = new WireMockServer(getWireMockConfiguration());
+        DirectCallHttpServer server = factory.getHttpServer();
+
+        wm.stubFor(post(ADD_USER_URL)
+                .willReturn(jsonResponse("{}", HttpStatus.SC_OK)
+                        .withTransformerParameter(
+                                "openapiValidationIgnoreErrors",
+                                Map.of("validation.response.status.unknown", false))));
+
+        Response response = server.stubRequest(postJsonRequest(wm.url(ADD_USER_URL), "{}"));
+
+        assertResponseFailedBecauseOfValidation(response);
+        assertThat(response.getBodyAsString()).doesNotContain("validation.request.body.schema.required");
+        assertThat(response.getBodyAsString()).contains("validation.response.status.unknown");
+    }
+
+    @Test
+    void testDisableRequestValidation() {
+        wm.stubFor(post(ADD_USER_URL)
+                .willReturn(created()
+                        .withTransformerParameter("openapiValidationValidateRequest", false)));
+
+        Response response = server.stubRequest(postJsonRequest(wm.url(ADD_USER_URL), "{}"));
+
+        assertThat(response.getStatus())
+                .as("response should be successful, because request should not be validated, got body \"%s\"", response.getBodyAsString())
+                .isEqualTo(HttpStatus.SC_CREATED);
+    }
+
+    @Test
+    void testDisableRequestValidationByOverridingGlobalValidateRequestSettingsWithTransformerParameter() {
+        System.setProperty("openapi_validation_validate_request", "true");
+
+        WireMockServer wm = new WireMockServer(getWireMockConfiguration());
+        DirectCallHttpServer server = factory.getHttpServer();
+
+        wm.stubFor(post(ADD_USER_URL)
+                .willReturn(created()
+                        .withTransformerParameter("openapiValidationValidateRequest", false)));
+
+        Response response = server.stubRequest(postJsonRequest(wm.url(ADD_USER_URL), "{}"));
+
+        assertThat(response.getStatus())
+                .as("response should be successful, because request should not be validated, got body \"%s\"", response.getBodyAsString())
+                .isEqualTo(HttpStatus.SC_CREATED);
+    }
+
+    @Test
+    void testEnableRequestValidationByOverridingGlobalValidateRequestSettingsWithTransformerParameter() {
+        System.setProperty("openapi_validation_validate_request", "false");
+
+        WireMockServer wm = new WireMockServer(getWireMockConfiguration());
+        DirectCallHttpServer server = factory.getHttpServer();
+
+        wm.stubFor(post(ADD_USER_URL)
+                .willReturn(created()
+                        .withTransformerParameter("openapiValidationValidateRequest", true)));
+
+        Response response = server.stubRequest(postJsonRequest(wm.url(ADD_USER_URL), "{}"));
+
+        assertResponseFailedBecauseOfValidation(response);
+    }
+
+    @Test
+    void testDisableResponseValidation() {
+        wm.stubFor(get(GET_USERS_URL)
+                .willReturn(jsonResponse("[]", HttpStatus.SC_NO_CONTENT)
+                        .withTransformerParameter("openapiValidationValidateResponse", false)));
+
+        Response response = server.stubRequest(getRequest(wm.url(GET_USERS_URL)));
+
+        assertThat(response.getStatus())
+                .as("response should be successful, because response should not be validated, got body \"%s\"", response.getBodyAsString())
+                .isEqualTo(HttpStatus.SC_NO_CONTENT);
+    }
+
+    @Test
+    void testDisableResponseValidationByOverridingGlobalValidateResponseSettingsWithTransformerParameter() {
+        System.setProperty("openapi_validation_validate_response", "true");
+
+        WireMockServer wm = new WireMockServer(getWireMockConfiguration());
+        DirectCallHttpServer server = factory.getHttpServer();
+
+        wm.stubFor(get(GET_USERS_URL)
+                .willReturn(jsonResponse("[]", HttpStatus.SC_NO_CONTENT)
+                        .withTransformerParameter("openapiValidationValidateResponse", false)));
+
+        Response response = server.stubRequest(getRequest(wm.url(GET_USERS_URL)));
+
+        assertThat(response.getStatus())
+                .as("response should be successful, because response should not be validated, got body \"%s\"", response.getBodyAsString())
+                .isEqualTo(HttpStatus.SC_NO_CONTENT);
+    }
+
+    @Test
+    void testEnableResponseValidationByOverridingGlobalValidateResponseSettingsWithTransformerParameter() {
+        System.setProperty("openapi_validation_validate_response", "false");
+
+        WireMockServer wm = new WireMockServer(getWireMockConfiguration());
+        DirectCallHttpServer server = factory.getHttpServer();
+
+        wm.stubFor(get(GET_USERS_URL)
+                .willReturn(jsonResponse("[]", HttpStatus.SC_NO_CONTENT)
+                        .withTransformerParameter("openapiValidationValidateResponse", true)));
+
+        Response response = server.stubRequest(getRequest(wm.url(GET_USERS_URL)));
+
+        assertResponseFailedBecauseOfValidation(response);
     }
 
     private static WireMockConfiguration getWireMockConfiguration() {
