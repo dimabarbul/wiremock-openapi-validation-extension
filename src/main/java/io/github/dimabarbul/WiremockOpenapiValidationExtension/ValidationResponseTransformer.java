@@ -25,11 +25,21 @@ import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
  */
 public class ValidationResponseTransformer implements ResponseTransformerV2 {
 
+    private static final String PARAMETER_OPENAPI_FILEPATH = "openapi_validation_filepath";
+    public static final String PARAMETER_FAILURE_STATUS_CODE = "openapi_validation_failure_status_code";
+    public static final String PARAMETER_IGNORE_ERRORS = "openapi_validation_ignore_errors";
+    public static final String PARAMETER_VALIDATE_REQUEST = "openapi_validation_validate_request";
+    public static final String PARAMETER_VALIDATE_RESPONSE = "openapi_validation_validate_response";
+
     private static final String DEFAULT_OPENAPI_FILE_PATH = "/var/wiremock/openapi.json";
     private static final int DEFAULT_FAILURE_STATUS_CODE = 500;
 
+    public static final ValidationReport EMPTY_VALIDATION_REPORT = ValidationReport.empty();
+
     private final OpenApiInteractionValidator validator;
     private final int failureStatusCode;
+    private final boolean validateRequest;
+    private final boolean validateResponse;
 
     public ValidationResponseTransformer() {
         failureStatusCode = getFailureStatusCode();
@@ -46,6 +56,8 @@ public class ValidationResponseTransformer implements ResponseTransformerV2 {
                     .build());
         }
         validator = validatorBuilder.build();
+        validateRequest = getValidateRequest();
+        validateResponse = getValidateResponse();
     }
 
     @Override
@@ -55,8 +67,13 @@ public class ValidationResponseTransformer implements ResponseTransformerV2 {
         }
 
         com.atlassian.oai.validator.model.Request request = convertRequest(serveEvent.getRequest());
-        ValidationReport requestReport = validator.validateRequest(request);
-        ValidationReport responseReport = validator.validateResponse(request.getPath(), request.getMethod(), convertResponse(response));
+        ValidationReport requestReport = validateRequest ?
+                validator.validateRequest(request) :
+                EMPTY_VALIDATION_REPORT;
+        ValidationReport responseReport = validateResponse ?
+                validator.validateResponse(
+                        request.getPath(), request.getMethod(), convertResponse(response)) :
+                EMPTY_VALIDATION_REPORT;
 
         if (requestReport.hasErrors() || responseReport.hasErrors()) {
             return ErrorResponseBuilder.buildResponse(failureStatusCode, requestReport, responseReport);
@@ -94,20 +111,32 @@ public class ValidationResponseTransformer implements ResponseTransformerV2 {
     }
 
     private static String getOpenapiFilePath() {
-        return getParameter("openapi_validation_filepath")
+        return getParameter(PARAMETER_OPENAPI_FILEPATH)
                 .orElse(DEFAULT_OPENAPI_FILE_PATH);
     }
 
     private static int getFailureStatusCode() {
-        return getParameter("openapi_validation_failure_status_code")
+        return getParameter(PARAMETER_FAILURE_STATUS_CODE)
                 .map(Integer::parseInt)
                 .orElse(DEFAULT_FAILURE_STATUS_CODE);
     }
 
     private static Set<String> getIgnoredErrors() {
-        return getParameter("openapi_validation_ignore_errors")
+        return getParameter(PARAMETER_IGNORE_ERRORS)
                 .map(e -> Arrays.stream(e.split(",")).collect(Collectors.toSet()))
                 .orElse(new HashSet<>());
+    }
+
+    private static boolean getValidateRequest() {
+        return getParameter(PARAMETER_VALIDATE_REQUEST)
+                .map(Boolean::parseBoolean)
+                .orElse(true);
+    }
+
+    private static boolean getValidateResponse() {
+        return getParameter(PARAMETER_VALIDATE_RESPONSE)
+                .map(Boolean::parseBoolean)
+                .orElse(true);
     }
 
     private static Optional<String> getParameter(final String name) {

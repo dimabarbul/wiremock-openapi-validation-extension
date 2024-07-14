@@ -21,9 +21,6 @@
                 }
               }
             }
-          },
-          "204": {
-            "description": "No users found"
           }
         }
       },
