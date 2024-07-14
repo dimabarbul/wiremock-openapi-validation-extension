@@ -1,5 +1,6 @@
 package io.github.dimabarbul.WiremockOpenapiValidationExtension;
 
+import java.io.File;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -26,11 +27,13 @@ import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
  */
 public class ValidationResponseTransformer implements ResponseTransformerV2 {
 
-    private static final Parameter PARAMETER_OPENAPI_FILEPATH = new Parameter("openapi_validation_filepath");
+    private static final Parameter PARAMETER_OPENAPI_FILE_PATH = new Parameter("openapi_validation_file_path");
     private static final Parameter PARAMETER_FAILURE_STATUS_CODE = new Parameter("openapi_validation_failure_status_code");
     private static final Parameter PARAMETER_IGNORE_ERRORS = new Parameter("openapi_validation_ignore_errors");
 
-    private static final String DEFAULT_OPENAPI_FILE_PATH = "/home/wiremock/openapi.json";
+    private static final String DEFAULT_JSON_OPENAPI_FILE_PATH = "/home/wiremock/openapi.json";
+    private static final String DEFAULT_YAML_OPENAPI_FILE_PATH = "/home/wiremock/openapi.yaml";
+    private static final String DEFAULT_YML_OPENAPI_FILE_PATH = "/home/wiremock/openapi.yml";
     private static final int DEFAULT_FAILURE_STATUS_CODE = 500;
 
     private final OpenApiInteractionValidator globalValidator;
@@ -106,8 +109,27 @@ public class ValidationResponseTransformer implements ResponseTransformerV2 {
     }
 
     private static String getOpenapiFilePath() {
-        return getGlobalParameter(PARAMETER_OPENAPI_FILEPATH)
-                .orElse(DEFAULT_OPENAPI_FILE_PATH);
+        return getGlobalParameter(PARAMETER_OPENAPI_FILE_PATH)
+                .orElseGet(ValidationResponseTransformer::getFirstExistingOpenApiFile);
+    }
+
+    private static String getFirstExistingOpenApiFile() {
+        if (new File(DEFAULT_JSON_OPENAPI_FILE_PATH).exists()) {
+            return DEFAULT_JSON_OPENAPI_FILE_PATH;
+        }
+        if (new File(DEFAULT_YAML_OPENAPI_FILE_PATH).exists()) {
+            return DEFAULT_YAML_OPENAPI_FILE_PATH;
+        }
+
+        if (new File(DEFAULT_YML_OPENAPI_FILE_PATH).exists()) {
+            return DEFAULT_YML_OPENAPI_FILE_PATH;
+        }
+
+        throw new RuntimeException(String.format(
+                "Cannot find OpenAPI file. Checked locations: %s, %s, %s",
+                DEFAULT_JSON_OPENAPI_FILE_PATH,
+                DEFAULT_YAML_OPENAPI_FILE_PATH,
+                DEFAULT_YML_OPENAPI_FILE_PATH));
     }
 
     private static int getGlobalFailureStatusCode() {
@@ -119,13 +141,13 @@ public class ValidationResponseTransformer implements ResponseTransformerV2 {
     private static Set<String> getGlobalIgnoredErrors() {
         return getGlobalParameter(PARAMETER_IGNORE_ERRORS)
                 .map(e -> Arrays.stream(e.split(",")).collect(Collectors.toSet()))
-                .orElse(new HashSet<>());
+                .orElseGet(HashSet::new);
     }
 
     private static Optional<String> getGlobalParameter(final Parameter parameter) {
         return Optional.ofNullable(
                 Optional.ofNullable(System.getProperty(parameter.systemPropertyName()))
-                    .orElse(System.getenv(parameter.envName())));
+                    .orElseGet(() -> System.getenv(parameter.envName())));
     }
 
     private OpenApiInteractionValidator getValidatorWithAdditionalIgnoredErrors(final Object ignoredErrors) {

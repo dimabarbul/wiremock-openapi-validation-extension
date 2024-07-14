@@ -46,7 +46,7 @@ class ValidationResponseTransformerTest {
     private static final String OPENAPI_FILE_PATH = "src/test/resources/openapi.json";
 
     static {
-        System.setProperty("openapi_validation_filepath", OPENAPI_FILE_PATH);
+        System.setProperty("openapi_validation_file_path", OPENAPI_FILE_PATH);
     }
 
     private static final DirectCallHttpServerFactory factory = new DirectCallHttpServerFactory();
@@ -65,7 +65,7 @@ class ValidationResponseTransformerTest {
 
     @BeforeEach
     public void beforeEach() {
-        System.setProperty("openapi_validation_filepath", OPENAPI_FILE_PATH);
+        System.setProperty("openapi_validation_file_path", OPENAPI_FILE_PATH);
         System.clearProperty("openapi_validation_failure_status_code");
         System.clearProperty("openapi_validation_ignore_errors");
     }
@@ -237,7 +237,7 @@ class ValidationResponseTransformerTest {
 
     @Test
     void testStartupFailureOnAbsentOpenApiFile() {
-        System.setProperty("openapi_validation_filepath", "some-non-existent-file");
+        System.setProperty("openapi_validation_file_path", "some-non-existent-file");
         assertThatExceptionOfType(OpenApiInteractionValidator.ApiLoadException.class)
                 .isThrownBy(ValidationResponseTransformer::new);
     }
