@@ -29,18 +29,12 @@ public class ValidationResponseTransformer implements ResponseTransformerV2 {
     private static final Parameter PARAMETER_OPENAPI_FILEPATH = new Parameter("openapi_validation_filepath");
     private static final Parameter PARAMETER_FAILURE_STATUS_CODE = new Parameter("openapi_validation_failure_status_code");
     private static final Parameter PARAMETER_IGNORE_ERRORS = new Parameter("openapi_validation_ignore_errors");
-    private static final Parameter PARAMETER_VALIDATE_REQUEST = new Parameter("openapi_validation_validate_request");
-    private static final Parameter PARAMETER_VALIDATE_RESPONSE = new Parameter("openapi_validation_validate_response");
 
     private static final String DEFAULT_OPENAPI_FILE_PATH = "/var/wiremock/openapi.json";
     private static final int DEFAULT_FAILURE_STATUS_CODE = 500;
 
-    public static final ValidationReport EMPTY_VALIDATION_REPORT = ValidationReport.empty();
-
     private final OpenApiInteractionValidator globalValidator;
     private final int globalFailureStatusCode;
-    private final boolean globalValidateRequest;
-    private final boolean globalValidateResponse;
     private OpenApiInteractionValidator.Builder globalValidatorBuilder;
 
     public ValidationResponseTransformer() {
@@ -57,8 +51,6 @@ public class ValidationResponseTransformer implements ResponseTransformerV2 {
                     .build());
         }
         globalValidator = globalValidatorBuilder.build();
-        globalValidateRequest = getGlobalValidateRequest();
-        globalValidateResponse = getGlobalValidateResponse();
     }
 
     @Override
@@ -69,20 +61,12 @@ public class ValidationResponseTransformer implements ResponseTransformerV2 {
 
         com.atlassian.oai.validator.model.Request request = convertRequest(serveEvent.getRequest());
         Parameters transformerParameters = serveEvent.getTransformerParameters();
-        boolean validateRequest = transformerParameters.getBoolean(
-                PARAMETER_VALIDATE_REQUEST.transformerParameterName(), globalValidateRequest);
-        boolean validateResponse = transformerParameters.getBoolean(
-                PARAMETER_VALIDATE_RESPONSE.transformerParameterName(), globalValidateResponse);
         Object ignoredErrors = transformerParameters.get(
                 PARAMETER_IGNORE_ERRORS.transformerParameterName());
         OpenApiInteractionValidator validator = getValidatorWithAdditionalIgnoredErrors(ignoredErrors);
-        ValidationReport requestReport = validateRequest ?
-                validator.validateRequest(request) :
-                EMPTY_VALIDATION_REPORT;
-        ValidationReport responseReport = validateResponse ?
-                validator.validateResponse(
-                        request.getPath(), request.getMethod(), convertResponse(response)) :
-                EMPTY_VALIDATION_REPORT;
+        ValidationReport requestReport = validator.validateRequest(request);
+        ValidationReport responseReport = validator.validateResponse(
+                request.getPath(), request.getMethod(), convertResponse(response));
 
         if (requestReport.hasErrors() || responseReport.hasErrors()) {
             int failureStatusCode = transformerParameters.getInt(
@@ -136,18 +120,6 @@ public class ValidationResponseTransformer implements ResponseTransformerV2 {
         return getGlobalParameter(PARAMETER_IGNORE_ERRORS)
                 .map(e -> Arrays.stream(e.split(",")).collect(Collectors.toSet()))
                 .orElse(new HashSet<>());
-    }
-
-    private static boolean getGlobalValidateRequest() {
-        return getGlobalParameter(PARAMETER_VALIDATE_REQUEST)
-                .map(Boolean::parseBoolean)
-                .orElse(true);
-    }
-
-    private static boolean getGlobalValidateResponse() {
-        return getGlobalParameter(PARAMETER_VALIDATE_RESPONSE)
-                .map(Boolean::parseBoolean)
-                .orElse(true);
     }
 
     private static Optional<String> getGlobalParameter(final Parameter parameter) {
