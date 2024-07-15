@@ -1,0 +1,4 @@
+FROM wiremock/wiremock:3.8.0-1-alpine
+# Fix CVE-2024-5535
+RUN apk upgrade openssl --no-cache
+COPY target/wiremock-openapi-validation-extension-*.jar /var/wiremock/extensions

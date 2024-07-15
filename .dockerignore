@@ -1,0 +1,4 @@
+.git/
+.idea/
+target/
+!target/wiremock-openapi-validation-extension-*.jar
