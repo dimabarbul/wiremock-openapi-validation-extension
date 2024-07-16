@@ -1,5 +1,7 @@
 package io.github.dimabarbul.WiremockOpenapiValidationExtension;
 
+import static com.github.tomakehurst.wiremock.common.LocalNotifier.notifier;
+
 import java.io.File;
 import java.net.URI;
 import java.util.Arrays;
@@ -21,6 +23,7 @@ import com.github.tomakehurst.wiremock.http.QueryParameter;
 import com.github.tomakehurst.wiremock.http.Request;
 import com.github.tomakehurst.wiremock.http.Response;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
+import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 
 /**
  * WireMock response transformer that validates request and response against OpenAPI file.
@@ -74,7 +77,9 @@ public class ValidationResponseTransformer implements ResponseTransformerV2 {
         if (requestReport.hasErrors() || responseReport.hasErrors()) {
             int failureStatusCode = transformerParameters.getInt(
                     PARAMETER_FAILURE_STATUS_CODE.transformerParameterName(), globalFailureStatusCode);
-            return ErrorResponseBuilder.buildResponse(failureStatusCode, requestReport, responseReport);
+            Response errorResponse = ErrorResponseBuilder.buildResponse(failureStatusCode, requestReport, responseReport);
+            log(serveEvent.getRequest(), response, errorResponse);
+            return errorResponse;
         }
 
         return response;
@@ -191,5 +196,31 @@ public class ValidationResponseTransformer implements ResponseTransformerV2 {
                                         e -> ValidationReport.Level.IGNORE)))
                         .build())
                 .build();
+    }
+
+    private static void log(final LoggedRequest request, final Response response, final Response errorResponse) {
+        notifier().error(String.format(
+                "OpenAPI validation error\n\n** Request **:\n%s\n\n** Response **:\n%s\n\n** Validation response **:\n%s",
+                prettifyForOutput(request),
+                prettifyForOutput(response),
+                prettifyForOutput(errorResponse)));
+    }
+
+    private static String prettifyForOutput(final LoggedRequest request) {
+        return String.format(
+                "URL: %s\nHeaders:\n%s\nBody: %s",
+                request.getUrl(),
+                request.getHeaders(),
+                request.getBodyAsString()
+        );
+    }
+
+    private static String prettifyForOutput(final Response response) {
+        return String.format(
+                "Status code: %d\nHeaders:\n%s\nBody: %s",
+                response.getStatus(),
+                response.getHeaders(),
+                response.getBodyAsString()
+        );
     }
 }
