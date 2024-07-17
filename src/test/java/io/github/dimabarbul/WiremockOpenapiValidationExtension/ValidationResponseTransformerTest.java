@@ -13,19 +13,17 @@ import static io.github.dimabarbul.WiremockOpenapiValidationExtension.RequestBui
 import static io.github.dimabarbul.WiremockOpenapiValidationExtension.RequestBuilder.getRequest;
 import static io.github.dimabarbul.WiremockOpenapiValidationExtension.RequestBuilder.postJsonRequest;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.atlassian.oai.validator.OpenApiInteractionValidator;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
@@ -45,10 +43,6 @@ class ValidationResponseTransformerTest {
     private static final String DELETE_USER_URL = "/users/123";
     private static final String OPENAPI_FILE_PATH = "src/test/resources/openapi.json";
 
-    static {
-        System.setProperty("openapi_validation_file_path", OPENAPI_FILE_PATH);
-    }
-
     private static final DirectCallHttpServerFactory factory = new DirectCallHttpServerFactory();
     private static DirectCallHttpServer server;
 
@@ -59,15 +53,8 @@ class ValidationResponseTransformerTest {
             .build();
 
     @BeforeAll
-    public static void beforeAll() {
+    static void beforeAll() {
         server = factory.getHttpServer();
-    }
-
-    @BeforeEach
-    public void beforeEach() {
-        System.setProperty("openapi_validation_file_path", OPENAPI_FILE_PATH);
-        System.clearProperty("openapi_validation_failure_status_code");
-        System.clearProperty("openapi_validation_ignore_errors");
     }
 
     @Test
@@ -236,16 +223,9 @@ class ValidationResponseTransformerTest {
     }
 
     @Test
-    void testStartupFailureOnAbsentOpenApiFile() {
-        System.setProperty("openapi_validation_file_path", "some-non-existent-file");
-        assertThatExceptionOfType(OpenApiInteractionValidator.ApiLoadException.class)
-                .isThrownBy(ValidationResponseTransformer::new);
-    }
-
-    @Test
     void testGlobalCustomResponseCodeOnValidationFailure() {
-        System.setProperty("openapi_validation_failure_status_code", "599");
-        WireMockServer wm = new WireMockServer(getWireMockConfiguration());
+        WireMockServer wm = new WireMockServer(getWireMockConfiguration(ValidationResponseTransformerOptions.builder()
+                .withFailureStatusCode(599)));
 
         wm.stubFor(get(UrlPattern.ANY)
                 .willReturn(noContent()));
@@ -259,9 +239,8 @@ class ValidationResponseTransformerTest {
 
     @Test
     void testGloballyIgnoreSpecificErrors() {
-        System.setProperty("openapi_validation_ignore_errors", "validation.request.body.schema.required,validation.response.status.unknown");
-
-        WireMockServer wm = new WireMockServer(getWireMockConfiguration());
+        WireMockServer wm = new WireMockServer(getWireMockConfiguration(ValidationResponseTransformerOptions.builder()
+                .withIgnoredErrors(List.of("validation.request.body.schema.required", "validation.response.status.unknown"))));
         DirectCallHttpServer server = factory.getHttpServer();
 
         wm.stubFor(post(ADD_USER_URL)
@@ -305,9 +284,8 @@ class ValidationResponseTransformerTest {
 
     @Test
     void testIgnoreSpecificErrorsCanBeAddedToGlobalList() {
-        System.setProperty("openapi_validation_ignore_errors", "validation.request.body.schema.required");
-
-        WireMockServer wm = new WireMockServer(getWireMockConfiguration());
+        WireMockServer wm = new WireMockServer(getWireMockConfiguration(ValidationResponseTransformerOptions.builder()
+                .withIgnoredErrors(List.of("validation.request.body.schema.required"))));
         DirectCallHttpServer server = factory.getHttpServer();
 
         wm.stubFor(post(ADD_USER_URL)
@@ -325,9 +303,8 @@ class ValidationResponseTransformerTest {
 
     @Test
     void testGloballyIgnoredErrorCanBeEnabledWithTransformerParameters() {
-        System.setProperty("openapi_validation_ignore_errors", "validation.request.body.schema.required,validation.response.status.unknown");
-
-        WireMockServer wm = new WireMockServer(getWireMockConfiguration());
+        WireMockServer wm = new WireMockServer(getWireMockConfiguration(ValidationResponseTransformerOptions.builder()
+                .withIgnoredErrors(List.of("validation.request.body.schema.required", "validation.response.status.unknown"))));
         DirectCallHttpServer server = factory.getHttpServer();
 
         wm.stubFor(post(ADD_USER_URL)
@@ -344,9 +321,15 @@ class ValidationResponseTransformerTest {
     }
 
     private static WireMockConfiguration getWireMockConfiguration() {
+        return getWireMockConfiguration(ValidationResponseTransformerOptions.builder());
+    }
+
+    private static WireMockConfiguration getWireMockConfiguration(final ValidationResponseTransformerOptions.Builder builder) {
         return wireMockConfig()
                 .httpServerFactory(factory)
-                .extensions(new ValidationResponseTransformer());
+                .extensions(new ValidationResponseTransformer(builder
+                        .withOpenapiFilePath(OPENAPI_FILE_PATH)
+                        .build()));
     }
 
     private static void assertResponseFailedBecauseOfValidation(final Response response) {

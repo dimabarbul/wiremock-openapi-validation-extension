@@ -4,11 +4,8 @@ import static com.github.tomakehurst.wiremock.common.LocalNotifier.notifier;
 
 import java.io.File;
 import java.net.URI;
-import java.util.Arrays;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.atlassian.oai.validator.OpenApiInteractionValidator;
@@ -17,46 +14,36 @@ import com.atlassian.oai.validator.model.SimpleResponse;
 import com.atlassian.oai.validator.report.LevelResolver;
 import com.atlassian.oai.validator.report.ValidationReport;
 import com.github.tomakehurst.wiremock.common.Urls;
-import com.github.tomakehurst.wiremock.extension.Parameters;
 import com.github.tomakehurst.wiremock.extension.ResponseTransformerV2;
 import com.github.tomakehurst.wiremock.http.QueryParameter;
 import com.github.tomakehurst.wiremock.http.Request;
 import com.github.tomakehurst.wiremock.http.Response;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import com.google.common.collect.ImmutableList;
 
 /**
  * WireMock response transformer that validates request and response against OpenAPI file.
+ * It returns original response if request and response are valid, otherwise it replaces
+ * response with one describing what exactly went wrong.
  */
 public class ValidationResponseTransformer implements ResponseTransformerV2 {
 
-    private static final Parameter PARAMETER_OPENAPI_FILE_PATH = new Parameter("openapi_validation_file_path");
-    private static final Parameter PARAMETER_FAILURE_STATUS_CODE = new Parameter("openapi_validation_failure_status_code");
-    private static final Parameter PARAMETER_IGNORE_ERRORS = new Parameter("openapi_validation_ignore_errors");
+    private static final List<String> DEFAULT_OPENAPI_FILE_PATHS = List.of(
+            "/home/wiremock/openapi.json",
+            "/home/wiremock/openapi.yaml",
+            "/home/wiremock/openapi.yml");
 
-    private static final String DEFAULT_JSON_OPENAPI_FILE_PATH = "/home/wiremock/openapi.json";
-    private static final String DEFAULT_YAML_OPENAPI_FILE_PATH = "/home/wiremock/openapi.yaml";
-    private static final String DEFAULT_YML_OPENAPI_FILE_PATH = "/home/wiremock/openapi.yml";
-    private static final int DEFAULT_FAILURE_STATUS_CODE = 500;
-
+    private final ValidationResponseTransformerOptions options;
     private final OpenApiInteractionValidator globalValidator;
-    private final int globalFailureStatusCode;
-    private OpenApiInteractionValidator.Builder globalValidatorBuilder;
 
     public ValidationResponseTransformer() {
-        globalFailureStatusCode = getGlobalFailureStatusCode();
-        final Set<String> ignoredErrors = getGlobalIgnoredErrors();
-        globalValidatorBuilder = OpenApiInteractionValidator.createForSpecificationUrl(getOpenapiFilePath());
-        if (!ignoredErrors.isEmpty()) {
-            globalValidatorBuilder = globalValidatorBuilder.withLevelResolver(LevelResolver.create()
-                            .withLevels(ignoredErrors
-                                    .stream()
-                                    .collect(Collectors.toMap(
-                                            e -> e,
-                                            e -> ValidationReport.Level.IGNORE)))
-                    .build());
-        }
-        globalValidator = globalValidatorBuilder.build();
+        this(getDefaultOptions());
+    }
+
+    public ValidationResponseTransformer(final ValidationResponseTransformerOptions options) {
+        this.options = options;
+        globalValidator = buildOpenApiValidator(options);
     }
 
     @Override
@@ -66,18 +53,19 @@ public class ValidationResponseTransformer implements ResponseTransformerV2 {
         }
 
         com.atlassian.oai.validator.model.Request request = convertRequest(serveEvent.getRequest());
-        Parameters transformerParameters = serveEvent.getTransformerParameters();
-        Object ignoredErrors = transformerParameters.get(
-                PARAMETER_IGNORE_ERRORS.transformerParameterName());
-        OpenApiInteractionValidator validator = getValidatorWithAdditionalIgnoredErrors(ignoredErrors);
+        final ValidationTransformerParameters parameters = ValidationTransformerParameters.fromServeEvent(serveEvent);
+        final ValidationResponseTransformerOptions mergedOptions =
+                ValidationResponseTransformerOptions.builder(options)
+                        .mergeWith(parameters)
+                        .build();
+        OpenApiInteractionValidator validator = getStubSpecificValidator(mergedOptions);
         ValidationReport requestReport = validator.validateRequest(request);
         ValidationReport responseReport = validator.validateResponse(
                 request.getPath(), request.getMethod(), convertResponse(response));
 
         if (requestReport.hasErrors() || responseReport.hasErrors()) {
-            int failureStatusCode = transformerParameters.getInt(
-                    PARAMETER_FAILURE_STATUS_CODE.transformerParameterName(), globalFailureStatusCode);
-            Response errorResponse = ErrorResponseBuilder.buildResponse(failureStatusCode, requestReport, responseReport);
+            Response errorResponse = ErrorResponseBuilder.buildResponse(
+                    mergedOptions.getFailureStatusCode(), requestReport, responseReport);
             log(serveEvent.getRequest(), response, errorResponse);
             return errorResponse;
         }
@@ -113,89 +101,48 @@ public class ValidationResponseTransformer implements ResponseTransformerV2 {
         return builder.build();
     }
 
-    private static String getOpenapiFilePath() {
-        return getGlobalParameter(PARAMETER_OPENAPI_FILE_PATH)
-                .orElseGet(ValidationResponseTransformer::getFirstExistingOpenApiFile);
+    private static ValidationResponseTransformerOptions getDefaultOptions() {
+        ValidationResponseTransformerOptions options = ValidationResponseTransformerOptions.fromSystemParameters();
+        if (options.getOpenapiFilePath() == null) {
+            options = ValidationResponseTransformerOptions.builder(options)
+                    .withOpenapiFilePath(getFirstExistingFile())
+                    .build();
+        }
+        return options;
     }
 
-    private static String getFirstExistingOpenApiFile() {
-        if (new File(DEFAULT_JSON_OPENAPI_FILE_PATH).exists()) {
-            return DEFAULT_JSON_OPENAPI_FILE_PATH;
-        }
-        if (new File(DEFAULT_YAML_OPENAPI_FILE_PATH).exists()) {
-            return DEFAULT_YAML_OPENAPI_FILE_PATH;
-        }
-
-        if (new File(DEFAULT_YML_OPENAPI_FILE_PATH).exists()) {
-            return DEFAULT_YML_OPENAPI_FILE_PATH;
+    private static String getFirstExistingFile() {
+        for (final String filePath : DEFAULT_OPENAPI_FILE_PATHS) {
+            if (new File(filePath).exists()) {
+                return filePath;
+            }
         }
 
         throw new RuntimeException(String.format(
-                "Cannot find OpenAPI file. Checked locations: %s, %s, %s",
-                DEFAULT_JSON_OPENAPI_FILE_PATH,
-                DEFAULT_YAML_OPENAPI_FILE_PATH,
-                DEFAULT_YML_OPENAPI_FILE_PATH));
+                "Cannot find OpenAPI file. Checked locations: %s",
+                String.join(", ", DEFAULT_OPENAPI_FILE_PATHS)));
     }
 
-    private static int getGlobalFailureStatusCode() {
-        return getGlobalParameter(PARAMETER_FAILURE_STATUS_CODE)
-                .map(Integer::parseInt)
-                .orElse(DEFAULT_FAILURE_STATUS_CODE);
+    private static OpenApiInteractionValidator buildOpenApiValidator(final ValidationResponseTransformerOptions options) {
+
+        final OpenApiInteractionValidator.Builder builder = OpenApiInteractionValidator.createForSpecificationUrl(options.getOpenapiFilePath());
+        final ImmutableList<String> ignoredErrors = options.getIgnoredErrors();
+        builder.withLevelResolver(LevelResolver.create()
+                .withLevels(ignoredErrors
+                        .stream()
+                        .collect(Collectors.toMap(
+                                e -> e,
+                                e -> ValidationReport.Level.IGNORE)))
+                .build());
+        return builder.build();
     }
 
-    private static Set<String> getGlobalIgnoredErrors() {
-        return getGlobalParameter(PARAMETER_IGNORE_ERRORS)
-                .map(e -> Arrays.stream(e.split(",")).collect(Collectors.toSet()))
-                .orElseGet(HashSet::new);
-    }
-
-    private static Optional<String> getGlobalParameter(final Parameter parameter) {
-        return Optional.ofNullable(
-                Optional.ofNullable(System.getProperty(parameter.systemPropertyName()))
-                    .orElseGet(() -> System.getenv(parameter.envName())));
-    }
-
-    private OpenApiInteractionValidator getValidatorWithAdditionalIgnoredErrors(final Object ignoredErrors) {
-        if (ignoredErrors == null) {
+    private OpenApiInteractionValidator getStubSpecificValidator(final ValidationResponseTransformerOptions specificOptions) {
+        if (specificOptions.getIgnoredErrors() == options.getIgnoredErrors()) {
             return globalValidator;
         }
 
-        if (!(ignoredErrors instanceof Map)) {
-            throw new RuntimeException("Ignored errors must be map string to boolean");
-        }
-
-        //noinspection unchecked - there is try-catch later
-        Map<String, Boolean> localIgnoredErrors = (Map<String, Boolean>) ignoredErrors;
-
-        if (localIgnoredErrors.isEmpty()) {
-            return globalValidator;
-        }
-
-        Set<String> resultIgnoredErrors = getGlobalIgnoredErrors();
-
-        try {
-            resultIgnoredErrors.addAll(localIgnoredErrors.entrySet()
-                    .stream()
-                    .filter(Map.Entry::getValue)
-                    .map(Map.Entry::getKey)
-                    .collect(Collectors.toList()));
-            localIgnoredErrors.entrySet()
-                    .stream()
-                    .filter(e -> !e.getValue())
-                    .map(Map.Entry::getKey)
-                    .collect(Collectors.toList())
-                    .forEach(resultIgnoredErrors::remove);
-        } catch (ClassCastException e) {
-            throw new RuntimeException("Ignored errors must be map string to boolean");
-        }
-
-        return globalValidatorBuilder.withLevelResolver(LevelResolver.create()
-                        .withLevels(resultIgnoredErrors
-                                .stream().collect(Collectors.toMap(
-                                        Object::toString,
-                                        e -> ValidationReport.Level.IGNORE)))
-                        .build())
-                .build();
+        return buildOpenApiValidator(specificOptions);
     }
 
     private static void log(final LoggedRequest request, final Response response, final Response errorResponse) {
