@@ -20,9 +20,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.apache.http.HttpStatus;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.github.tomakehurst.wiremock.WireMockServer;
@@ -31,11 +29,10 @@ import com.github.tomakehurst.wiremock.direct.DirectCallHttpServer;
 import com.github.tomakehurst.wiremock.direct.DirectCallHttpServerFactory;
 import com.github.tomakehurst.wiremock.http.MultiValue;
 import com.github.tomakehurst.wiremock.http.Response;
-import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.matching.UrlPattern;
 import com.google.common.net.MediaType;
 
-class ValidationResponseTransformerTest {
+abstract class ValidationResponseTransformerTest {
 
     private static final int DEFAULT_VALIDATION_FAILURE_STATUS_CODE = 500;
     private static final String GET_USERS_URL = "/users";
@@ -43,17 +40,16 @@ class ValidationResponseTransformerTest {
     private static final String DELETE_USER_URL = "/users/123";
     private static final String OPENAPI_FILE_PATH = "src/test/resources/openapi.json";
 
-    private static final DirectCallHttpServerFactory factory = new DirectCallHttpServerFactory();
-    private static DirectCallHttpServer server;
+    private final DirectCallHttpServerFactory factory;
+    private final DirectCallHttpServer server;
 
-    @RegisterExtension
-    private static final WireMockExtension wm = WireMockExtension.newInstance()
-            .options(getWireMockConfiguration())
-            .failOnUnmatchedRequests(false)
-            .build();
+    private final String validatorName;
+    private final WireMockServer wm;
 
-    @BeforeAll
-    static void beforeAll() {
+    public ValidationResponseTransformerTest(final String validatorName) {
+        this.validatorName = validatorName;
+        factory = new DirectCallHttpServerFactory();
+        wm = new WireMockServer(getDefaultWireMockConfiguration());
         server = factory.getHttpServer();
     }
 
@@ -224,7 +220,7 @@ class ValidationResponseTransformerTest {
 
     @Test
     void testGlobalCustomResponseCodeOnValidationFailure() {
-        WireMockServer wm = new WireMockServer(getWireMockConfiguration(ValidationResponseTransformerOptions.builder()
+        WireMockServer wm = new WireMockServer(getWireMockConfiguration(ExtensionOptions.builder()
                 .withFailureStatusCode(599)));
 
         wm.stubFor(get(UrlPattern.ANY)
@@ -239,7 +235,7 @@ class ValidationResponseTransformerTest {
 
     @Test
     void testGloballyIgnoreSpecificErrors() {
-        WireMockServer wm = new WireMockServer(getWireMockConfiguration(ValidationResponseTransformerOptions.builder()
+        WireMockServer wm = new WireMockServer(getWireMockConfiguration(ExtensionOptions.builder()
                 .withIgnoredErrors(List.of("validation.request.body.schema.required", "validation.response.status.unknown"))));
         DirectCallHttpServer server = factory.getHttpServer();
 
@@ -284,7 +280,7 @@ class ValidationResponseTransformerTest {
 
     @Test
     void testIgnoreSpecificErrorsCanBeAddedToGlobalList() {
-        WireMockServer wm = new WireMockServer(getWireMockConfiguration(ValidationResponseTransformerOptions.builder()
+        WireMockServer wm = new WireMockServer(getWireMockConfiguration(ExtensionOptions.builder()
                 .withIgnoredErrors(List.of("validation.request.body.schema.required"))));
         DirectCallHttpServer server = factory.getHttpServer();
 
@@ -303,7 +299,7 @@ class ValidationResponseTransformerTest {
 
     @Test
     void testGloballyIgnoredErrorCanBeEnabledWithTransformerParameters() {
-        WireMockServer wm = new WireMockServer(getWireMockConfiguration(ValidationResponseTransformerOptions.builder()
+        WireMockServer wm = new WireMockServer(getWireMockConfiguration(ExtensionOptions.builder()
                 .withIgnoredErrors(List.of("validation.request.body.schema.required", "validation.response.status.unknown"))));
         DirectCallHttpServer server = factory.getHttpServer();
 
@@ -320,23 +316,24 @@ class ValidationResponseTransformerTest {
         assertThat(response.getBodyAsString()).contains("validation.response.status.unknown");
     }
 
-    private static WireMockConfiguration getWireMockConfiguration() {
-        return getWireMockConfiguration(ValidationResponseTransformerOptions.builder());
+    private WireMockConfiguration getDefaultWireMockConfiguration() {
+        return getWireMockConfiguration(ExtensionOptions.builder());
     }
 
-    private static WireMockConfiguration getWireMockConfiguration(final ValidationResponseTransformerOptions.Builder builder) {
+    private WireMockConfiguration getWireMockConfiguration(final ExtensionOptions.Builder builder) {
         return wireMockConfig()
                 .httpServerFactory(factory)
                 .extensions(new ValidationResponseTransformer(builder
+                        .withValidatorName(validatorName)
                         .withOpenapiFilePath(OPENAPI_FILE_PATH)
                         .build()));
     }
 
-    private static void assertResponseFailedBecauseOfValidation(final Response response) {
+    private void assertResponseFailedBecauseOfValidation(final Response response) {
         assertResponseFailedBecauseOfValidation(response, DEFAULT_VALIDATION_FAILURE_STATUS_CODE);
     }
 
-    private static void assertResponseFailedBecauseOfValidation(final Response response, final int statusCode) {
+    private void assertResponseFailedBecauseOfValidation(final Response response, final int statusCode) {
         assertAll(
                 "Response failed because of OpenAPI validation",
                 () -> assertThat(response.getStatus()).isEqualTo(statusCode),

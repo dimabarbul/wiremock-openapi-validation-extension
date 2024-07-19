@@ -13,24 +13,26 @@ import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableList;
 
 /**
- * Options for {@link ValidationResponseTransformer}.
- * Use {@link ValidationResponseTransformerOptions#builder} or
- * {@link ValidationResponseTransformerOptions#fromSystemParameters()} to construct.
+ * Options for the extension, used by different classes throughout the code.
+ * Use {@link ExtensionOptions#builder} or {@link ExtensionOptions#fromSystemParameters()} to construct.
  */
-public class ValidationResponseTransformerOptions {
+public class ExtensionOptions {
 
     private static final int DEFAULT_FAILURE_STATUS_CODE = 500;
 
     private final String openapiFilePath;
+    private final String validatorName;
     private final int failureStatusCode;
     private final ImmutableList<String> ignoredErrors;
 
-    private ValidationResponseTransformerOptions(final String openapiFilePath,
-                                                 final int failureStatusCode,
-                                                 final ImmutableList<String> ignoredErrors) {
+    private ExtensionOptions(final String openapiFilePath,
+                             final String validatorName,
+                             final int failureStatusCode,
+                             final ImmutableList<String> ignoredErrors) {
+        this.openapiFilePath = openapiFilePath;
+        this.validatorName = validatorName;
         this.failureStatusCode = failureStatusCode;
         this.ignoredErrors = requireNonNull(ignoredErrors);
-        this.openapiFilePath = openapiFilePath;
     }
 
     /**
@@ -49,18 +51,19 @@ public class ValidationResponseTransformerOptions {
      *
      * @return Builder prepopulated with data from the options
      */
-    public static Builder builder(final ValidationResponseTransformerOptions options) {
+    public static Builder builder(final ExtensionOptions options) {
         return new Builder(options);
     }
 
-    public static ValidationResponseTransformerOptions fromSystemParameters() {
+    public static ExtensionOptions fromSystemParameters() {
         return fromSystemParameters(SystemAccessor.Instance);
     }
 
-    static ValidationResponseTransformerOptions fromSystemParameters(
+    static ExtensionOptions fromSystemParameters(
             final SystemAccessor systemAccessor) {
         Builder builder = builder();
         getGlobalParameter(systemAccessor, ValidationParameter.OPENAPI_FILE_PATH).ifPresent(builder::withOpenapiFilePath);
+        getGlobalParameter(systemAccessor, ValidationParameter.VALIDATOR_NAME).ifPresent(builder::withValidatorName);
         getGlobalParameter(systemAccessor, ValidationParameter.FAILURE_STATUS_CODE)
                 .map(Integer::parseInt)
                 .ifPresent(builder::withFailureStatusCode);
@@ -90,39 +93,50 @@ public class ValidationResponseTransformerOptions {
         return ignoredErrors;
     }
 
+    public String getValidatorName() {
+        return validatorName;
+    }
+
     public static final class Builder {
 
         private String openapiFilePath = null;
+        private String validatorName = "atlassian";
         private int failureStatusCode = DEFAULT_FAILURE_STATUS_CODE;
         private List<String> ignoredErrors = List.of();
 
         public Builder() {
         }
 
-        public Builder(final ValidationResponseTransformerOptions options) {
+        public Builder(final ExtensionOptions options) {
             openapiFilePath = options.getOpenapiFilePath();
+            validatorName = options.getValidatorName();
             failureStatusCode = options.getFailureStatusCode();
             ignoredErrors = options.getIgnoredErrors();
         }
 
-        public ValidationResponseTransformerOptions.Builder withOpenapiFilePath(final String openapiFilePath) {
+        public ExtensionOptions.Builder withOpenapiFilePath(final String openapiFilePath) {
             this.openapiFilePath = openapiFilePath;
             return this;
         }
 
-        public ValidationResponseTransformerOptions.Builder withFailureStatusCode(final int failureStatusCode) {
+        public ExtensionOptions.Builder withFailureStatusCode(final int failureStatusCode) {
             this.failureStatusCode = failureStatusCode;
             return this;
         }
 
-        public ValidationResponseTransformerOptions.Builder withIgnoredErrors(final List<String> ignoredErrors) {
+        public ExtensionOptions.Builder withIgnoredErrors(final List<String> ignoredErrors) {
             this.ignoredErrors = ignoredErrors;
             return this;
         }
 
-        public ValidationResponseTransformerOptions build() {
-            return new ValidationResponseTransformerOptions(
-                    openapiFilePath, failureStatusCode, ImmutableList.copyOf(ignoredErrors));
+        public Builder withValidatorName(final String validatorName) {
+            this.validatorName = validatorName;
+            return this;
+        }
+
+        public ExtensionOptions build() {
+            return new ExtensionOptions(
+                    openapiFilePath, validatorName, failureStatusCode, ImmutableList.copyOf(ignoredErrors));
         }
 
         Builder mergeWith(final ValidationTransformerParameters parameters) {
@@ -132,23 +146,21 @@ public class ValidationResponseTransformerOptions {
             final Set<String> resultIgnoredErrors = new HashSet<>(ignoredErrors);
 
             if (!ignoredErrorsFromParameters.isEmpty()) {
-                resultIgnoredErrors.addAll(ignoredErrorsFromParameters.entrySet()
+                ignoredErrorsFromParameters.entrySet()
                         .stream()
                         .filter(Map.Entry::getValue)
                         .map(Map.Entry::getKey)
-                        .collect(Collectors.toList()));
+                        .forEach(resultIgnoredErrors::add);
                 ignoredErrorsFromParameters.entrySet()
                         .stream()
                         .filter(e -> !e.getValue())
                         .map(Map.Entry::getKey)
-                        .collect(Collectors.toList())
                         .forEach(resultIgnoredErrors::remove);
 
-                withIgnoredErrors(List.copyOf(resultIgnoredErrors));
+                ignoredErrors = List.copyOf(resultIgnoredErrors);
             }
 
             return this;
         }
-
     }
 }

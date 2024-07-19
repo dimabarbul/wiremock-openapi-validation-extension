@@ -3,24 +3,12 @@ package io.github.dimabarbul.WiremockOpenapiValidationExtension;
 import static com.github.tomakehurst.wiremock.common.LocalNotifier.notifier;
 
 import java.io.File;
-import java.net.URI;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
-import com.atlassian.oai.validator.OpenApiInteractionValidator;
-import com.atlassian.oai.validator.model.SimpleRequest;
-import com.atlassian.oai.validator.model.SimpleResponse;
-import com.atlassian.oai.validator.report.LevelResolver;
-import com.atlassian.oai.validator.report.ValidationReport;
-import com.github.tomakehurst.wiremock.common.Urls;
 import com.github.tomakehurst.wiremock.extension.ResponseTransformerV2;
-import com.github.tomakehurst.wiremock.http.QueryParameter;
-import com.github.tomakehurst.wiremock.http.Request;
 import com.github.tomakehurst.wiremock.http.Response;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
-import com.google.common.collect.ImmutableList;
 
 /**
  * WireMock response transformer that validates request and response against OpenAPI file.
@@ -34,16 +22,17 @@ public class ValidationResponseTransformer implements ResponseTransformerV2 {
             "/home/wiremock/openapi.yaml",
             "/home/wiremock/openapi.yml");
 
-    private final ValidationResponseTransformerOptions options;
-    private final OpenApiInteractionValidator globalValidator;
+    private final ExtensionOptions options;
+    private final OpenApiValidator globalValidator;
 
+    @SuppressWarnings("unused")
     public ValidationResponseTransformer() {
         this(getDefaultOptions());
     }
 
-    public ValidationResponseTransformer(final ValidationResponseTransformerOptions options) {
+    public ValidationResponseTransformer(final ExtensionOptions options) {
         this.options = options;
-        globalValidator = buildOpenApiValidator(options);
+        this.globalValidator = OpenApiValidator.create(this.options);
     }
 
     @Override
@@ -52,21 +41,20 @@ public class ValidationResponseTransformer implements ResponseTransformerV2 {
             return response;
         }
 
-        com.atlassian.oai.validator.model.Request request = convertRequest(serveEvent.getRequest());
-        final ValidationTransformerParameters parameters = ValidationTransformerParameters.fromServeEvent(serveEvent);
-        final ValidationResponseTransformerOptions mergedOptions =
-                ValidationResponseTransformerOptions.builder(options)
-                        .mergeWith(parameters)
-                        .build();
-        OpenApiInteractionValidator validator = getStubSpecificValidator(mergedOptions);
-        ValidationReport requestReport = validator.validateRequest(request);
-        ValidationReport responseReport = validator.validateResponse(
-                request.getPath(), request.getMethod(), convertResponse(response));
+        LoggedRequest request = serveEvent.getRequest();
 
-        if (requestReport.hasErrors() || responseReport.hasErrors()) {
+        final ValidationTransformerParameters parameters = ValidationTransformerParameters.fromServeEvent(serveEvent);
+        final ExtensionOptions mergedOptions = ExtensionOptions.builder(options)
+                .mergeWith(parameters)
+                .build();
+        final OpenApiValidator validator = globalValidator.withOptions(OpenApiValidatorOptions.fromExtensionOptions(mergedOptions));
+        final ValidationResult requestValidationResult = validator.validateRequest(request);
+        final ValidationResult responseValidationResult = validator.validateResponse(request, response);
+
+        if (requestValidationResult.hasErrors() || responseValidationResult.hasErrors()) {
             Response errorResponse = ErrorResponseBuilder.buildResponse(
-                    mergedOptions.getFailureStatusCode(), requestReport, responseReport);
-            log(serveEvent.getRequest(), response, errorResponse);
+                    mergedOptions.getFailureStatusCode(), requestValidationResult, responseValidationResult);
+            log(request, response, errorResponse);
             return errorResponse;
         }
 
@@ -78,33 +66,10 @@ public class ValidationResponseTransformer implements ResponseTransformerV2 {
         return "openapi-validation";
     }
 
-    private static com.atlassian.oai.validator.model.Request convertRequest(final Request request) {
-        SimpleRequest.Builder builder = new SimpleRequest.Builder(
-                request.getMethod().toString(), request.getUrl());
-
-        Map<String, QueryParameter> queryParameters = Urls.splitQuery(URI.create(request.getUrl()));
-        queryParameters.forEach((k, v) -> builder.withQueryParam(v.key(), v.values()));
-
-        for (String key : request.getAllHeaderKeys()) {
-            builder.withHeader(key, request.getHeader(key));
-        }
-
-        return builder
-                .withBody(request.getBody())
-                .build();
-    }
-
-    private static com.atlassian.oai.validator.model.Response convertResponse(final Response response) {
-        SimpleResponse.Builder builder = new SimpleResponse.Builder(response.getStatus())
-                .withBody(response.getBody());
-        response.getHeaders().all().forEach((header) -> builder.withHeader(header.key(), header.values()));
-        return builder.build();
-    }
-
-    private static ValidationResponseTransformerOptions getDefaultOptions() {
-        ValidationResponseTransformerOptions options = ValidationResponseTransformerOptions.fromSystemParameters();
+    private static ExtensionOptions getDefaultOptions() {
+        ExtensionOptions options = ExtensionOptions.fromSystemParameters();
         if (options.getOpenapiFilePath() == null) {
-            options = ValidationResponseTransformerOptions.builder(options)
+            options = ExtensionOptions.builder(options)
                     .withOpenapiFilePath(getFirstExistingFile())
                     .build();
         }
@@ -121,28 +86,6 @@ public class ValidationResponseTransformer implements ResponseTransformerV2 {
         throw new RuntimeException(String.format(
                 "Cannot find OpenAPI file. Checked locations: %s",
                 String.join(", ", DEFAULT_OPENAPI_FILE_PATHS)));
-    }
-
-    private static OpenApiInteractionValidator buildOpenApiValidator(final ValidationResponseTransformerOptions options) {
-
-        final OpenApiInteractionValidator.Builder builder = OpenApiInteractionValidator.createForSpecificationUrl(options.getOpenapiFilePath());
-        final ImmutableList<String> ignoredErrors = options.getIgnoredErrors();
-        builder.withLevelResolver(LevelResolver.create()
-                .withLevels(ignoredErrors
-                        .stream()
-                        .collect(Collectors.toMap(
-                                e -> e,
-                                e -> ValidationReport.Level.IGNORE)))
-                .build());
-        return builder.build();
-    }
-
-    private OpenApiInteractionValidator getStubSpecificValidator(final ValidationResponseTransformerOptions specificOptions) {
-        if (specificOptions.getIgnoredErrors() == options.getIgnoredErrors()) {
-            return globalValidator;
-        }
-
-        return buildOpenApiValidator(specificOptions);
     }
 
     private static void log(final LoggedRequest request, final Response response, final Response errorResponse) {

@@ -2,7 +2,6 @@ package io.github.dimabarbul.WiremockOpenapiValidationExtension;
 
 import java.util.stream.Collectors;
 
-import com.atlassian.oai.validator.report.ValidationReport;
 import com.github.tomakehurst.wiremock.http.HttpHeader;
 import com.github.tomakehurst.wiremock.http.HttpHeaders;
 import com.github.tomakehurst.wiremock.http.Response;
@@ -10,34 +9,37 @@ import com.google.common.net.MediaType;
 
 final class ErrorResponseBuilder {
 
-    public static Response buildResponse(final int statusCode, final ValidationReport requestReport, final ValidationReport responseReport) {
+    public static Response buildResponse(final int statusCode,
+                                         final ValidationResult requestValidationResult,
+                                         final ValidationResult responseValidationResult) {
         return Response.response()
                 .status(statusCode)
                 .headers(new HttpHeaders(new HttpHeader("Content-Type", MediaType.HTML_UTF_8.toString())))
-                .body(buildBody(requestReport, responseReport))
+                .body(buildBody(requestValidationResult, responseValidationResult))
                 .build();
     }
 
-    private static String buildBody(final ValidationReport requestReport, final ValidationReport responseReport) {
+    private static String buildBody(final ValidationResult requestValidationResult,
+                                    final ValidationResult responseValidationResult) {
         return "<h1>Validation against OpenAPI failed</h1>\n" +
                 "<h2>Request Errors</h2>\n" +
-                getErrorsHtml(requestReport) +
+                getErrorsHtml(requestValidationResult) +
                 "<h2>Response Errors</h2>\n" +
-                getErrorsHtml(responseReport);
+                getErrorsHtml(responseValidationResult);
 
     }
 
-    private static String getErrorsHtml(final ValidationReport report) {
-        return report.hasErrors() ?
+    private static String getErrorsHtml(final ValidationResult validationResult) {
+        return validationResult.hasErrors() ?
                 "<ul>\n" +
-                        report.getMessages().stream().map(
+                        validationResult.getErrors().stream().map(
                                         m -> "\t<li>" + getErrorHtml(m) + "</li>\n")
                                 .collect(Collectors.joining()) +
                         "</ul>\n" :
                 "<b>No errors</b>\n";
     }
 
-    private static String getErrorHtml(final ValidationReport.Message message) {
-        return String.format("<i>[%s]</i> %s", message.getKey(), message.getMessage());
+    private static String getErrorHtml(final ValidationResult.Error error) {
+        return String.format("<i>[%s]</i> %s", error.getKey(), error.getMessage());
     }
 }

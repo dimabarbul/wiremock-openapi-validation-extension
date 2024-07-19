@@ -64,6 +64,11 @@
       <version>3.24.2</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.openapi4j</groupId>
+      <artifactId>openapi-operation-validator</artifactId>
+      <version>1.0.7</version>
+    </dependency>
 
   </dependencies>
 

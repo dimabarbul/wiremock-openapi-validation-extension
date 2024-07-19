@@ -15,14 +15,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 
-class ValidationResponseTransformerOptionsTest {
+class ExtensionOptionsTest {
 
     @Test
     public void testFromSystemParametersNothingIsSet() {
         final SystemAccessor systemAccessor = new TestSystemAccessor.Builder()
                 .build();
 
-        ValidationResponseTransformerOptions options = ValidationResponseTransformerOptions
+        ExtensionOptions options = ExtensionOptions
                 .fromSystemParameters(systemAccessor);
 
         assertThat(options).isNotNull();
@@ -39,7 +39,7 @@ class ValidationResponseTransformerOptionsTest {
                 .addSystemProperties("openapi_validation_ignore_errors", "1,2, 3 ")
                 .build();
 
-        ValidationResponseTransformerOptions options = ValidationResponseTransformerOptions
+        ExtensionOptions options = ExtensionOptions
                 .fromSystemParameters(systemAccessor);
 
         assertThat(options).isNotNull();
@@ -56,7 +56,7 @@ class ValidationResponseTransformerOptionsTest {
                 .addEnvironmentVariables("OPENAPI_VALIDATION_IGNORE_ERRORS", "1, 2 ,3")
                 .build();
 
-        ValidationResponseTransformerOptions options = ValidationResponseTransformerOptions
+        ExtensionOptions options = ExtensionOptions
                 .fromSystemParameters(systemAccessor);
 
         assertThat(options).isNotNull();
@@ -68,7 +68,7 @@ class ValidationResponseTransformerOptionsTest {
     @Test
     void testMergeWithEmptyServeEvent()
             throws JsonProcessingException {
-        final ValidationResponseTransformerOptions originalOptions = ValidationResponseTransformerOptions.builder()
+        final ExtensionOptions originalOptions = ExtensionOptions.builder()
                 .withOpenapiFilePath("filePath")
                 .withFailureStatusCode(123)
                 .withIgnoredErrors(List.of("error1", "error2"))
@@ -76,7 +76,7 @@ class ValidationResponseTransformerOptionsTest {
         final ValidationTransformerParameters parameters = ValidationTransformerParameters.fromServeEvent(
                 new ObjectMapper().readValue("{}", ServeEvent.class));
 
-        final ValidationResponseTransformerOptions mergedOptions = ValidationResponseTransformerOptions.builder(originalOptions)
+        final ExtensionOptions mergedOptions = ExtensionOptions.builder(originalOptions)
                 .mergeWith(parameters)
                 .build();
 
@@ -88,7 +88,7 @@ class ValidationResponseTransformerOptionsTest {
     @Test
     void testMergeWithFilledServeEvent()
             throws JsonProcessingException {
-        final ValidationResponseTransformerOptions originalOptions = ValidationResponseTransformerOptions.builder()
+        final ExtensionOptions originalOptions = ExtensionOptions.builder()
                 .withOpenapiFilePath("filePath")
                 .withFailureStatusCode(123)
                 .withIgnoredErrors(List.of("error1", "error2", "error3"))
@@ -110,7 +110,7 @@ class ValidationResponseTransformerOptionsTest {
         final ServeEvent serveEvent = new ObjectMapper().readValue(json, ServeEvent.class);
         final ValidationTransformerParameters parameters = ValidationTransformerParameters.fromServeEvent(serveEvent);
 
-        final ValidationResponseTransformerOptions mergedOptions = ValidationResponseTransformerOptions.builder(originalOptions)
+        final ExtensionOptions mergedOptions = ExtensionOptions.builder(originalOptions)
                 .mergeWith(parameters)
                 .build();
 
@@ -122,7 +122,7 @@ class ValidationResponseTransformerOptionsTest {
     @Test
     void testMergeWithPartiallyFilledServeEvent()
             throws JsonProcessingException {
-        final ValidationResponseTransformerOptions originalOptions = ValidationResponseTransformerOptions.builder()
+        final ExtensionOptions originalOptions = ExtensionOptions.builder()
                 .withOpenapiFilePath("filePath")
                 .withFailureStatusCode(123)
                 .withIgnoredErrors(List.of("error1", "error2", "error3"))
@@ -138,7 +138,7 @@ class ValidationResponseTransformerOptionsTest {
         final ServeEvent serveEvent = new ObjectMapper().readValue(json, ServeEvent.class);
         final ValidationTransformerParameters parameters = ValidationTransformerParameters.fromServeEvent(serveEvent);
 
-        final ValidationResponseTransformerOptions mergedOptions = ValidationResponseTransformerOptions.builder(originalOptions)
+        final ExtensionOptions mergedOptions = ExtensionOptions.builder(originalOptions)
                 .mergeWith(parameters)
                 .build();
 
