@@ -19,9 +19,9 @@ interface OpenApiValidator {
         throw new IllegalArgumentException("Unknown validator name \"" + validatorName + "\".");
     }
 
-    OpenApiValidator withOptions(final OpenApiValidatorOptions options);
+    OpenApiValidator withOptions(OpenApiValidatorOptions options);
 
-    ValidationResult validateRequest(final LoggedRequest request);
+    ValidationResult validateRequest(LoggedRequest request);
 
-    ValidationResult validateResponse(final LoggedRequest request, final Response response);
+    ValidationResult validateResponse(LoggedRequest request, Response response);
 }

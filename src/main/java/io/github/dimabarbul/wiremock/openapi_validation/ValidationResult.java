@@ -13,7 +13,7 @@ class ValidationResult {
         return new Builder();
     }
 
-    public ValidationResult(final ImmutableList<Error> errors) {
+    ValidationResult(final ImmutableList<Error> errors) {
         this.errors = errors;
     }
 
@@ -30,7 +30,7 @@ class ValidationResult {
         private final String key;
         private final String message;
 
-        public Error(final String key, final String message) {
+        Error(final String key, final String message) {
             this.key = key;
             this.message = message;
         }

@@ -9,7 +9,7 @@ import com.github.tomakehurst.wiremock.common.Metadata;
 import com.github.tomakehurst.wiremock.extension.Parameters;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 
-class ValidationTransformerParameters {
+final class ValidationTransformerParameters {
 
     private final Integer failureStatusCode;
     private final Map<String, Boolean> ignoredErrors;

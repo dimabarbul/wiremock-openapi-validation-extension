@@ -15,7 +15,7 @@ import com.github.tomakehurst.wiremock.verification.LoggedRequest;
  * It returns original response if request and response are valid, otherwise it replaces
  * response with one describing what exactly went wrong.
  */
-public class ValidationResponseTransformer implements ResponseTransformerV2 {
+public final class ValidationResponseTransformer implements ResponseTransformerV2 {
 
     private static final List<String> DEFAULT_OPENAPI_FILE_PATHS = List.of(
             "/home/wiremock/openapi.json",
@@ -25,11 +25,19 @@ public class ValidationResponseTransformer implements ResponseTransformerV2 {
     private final ExtensionOptions options;
     private final OpenApiValidator globalValidator;
 
+    /**
+     * Create a new instance of {@link ValidationResponseTransformer} with options configured by
+     * environment variables and system properties.
+     */
     @SuppressWarnings("unused")
     public ValidationResponseTransformer() {
         this(getDefaultOptions());
     }
 
+    /**
+     * Create a new instance of {@link ValidationResponseTransformer}.
+     * @param options Options to use
+     */
     public ValidationResponseTransformer(final ExtensionOptions options) {
         this.options = options;
         this.globalValidator = OpenApiValidator.create(this.options);
@@ -41,7 +49,7 @@ public class ValidationResponseTransformer implements ResponseTransformerV2 {
             return response;
         }
 
-        LoggedRequest request = serveEvent.getRequest();
+        final LoggedRequest request = serveEvent.getRequest();
 
         final ValidationTransformerParameters parameters = ValidationTransformerParameters.fromServeEvent(serveEvent);
         final ExtensionOptions mergedOptions = ExtensionOptions.builder(options)
@@ -52,7 +60,7 @@ public class ValidationResponseTransformer implements ResponseTransformerV2 {
         final ValidationResult responseValidationResult = validator.validateResponse(request, response);
 
         if (requestValidationResult.hasErrors() || responseValidationResult.hasErrors()) {
-            Response errorResponse = ErrorResponseBuilder.buildResponse(
+            final Response errorResponse = ErrorResponseBuilder.buildResponse(
                     mergedOptions.getFailureStatusCode(), requestValidationResult, responseValidationResult);
             log(request, response, errorResponse);
             return errorResponse;

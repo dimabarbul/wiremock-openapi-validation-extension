@@ -3,8 +3,8 @@ package io.github.dimabarbul.wiremock.openapi_validation;
 import java.util.Optional;
 
 interface SystemAccessor {
-    SystemAccessor Instance = new SystemAccessorImpl();
+    SystemAccessor INSTANCE = new SystemAccessorImpl();
 
-    Optional<String> getEnvironmentVariable(final ValidationParameter parameter);
-    Optional<String> getSystemProperty(final ValidationParameter parameter);
+    Optional<String> getEnvironmentVariable(ValidationParameter parameter);
+    Optional<String> getSystemProperty(ValidationParameter parameter);
 }

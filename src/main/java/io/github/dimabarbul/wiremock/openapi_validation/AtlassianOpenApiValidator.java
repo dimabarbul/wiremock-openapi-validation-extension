@@ -27,9 +27,9 @@ class AtlassianOpenApiValidator implements OpenApiValidator {
     private final OpenApiValidatorOptions options;
     private final OpenApiInteractionValidator atlassianValidator;
 
-    public AtlassianOpenApiValidator(final String openapiFilePath,
-                                     final boolean ignoreOpenapiErrors,
-                                     final OpenApiValidatorOptions options) {
+    AtlassianOpenApiValidator(final String openapiFilePath,
+                              final boolean ignoreOpenapiErrors,
+                              final OpenApiValidatorOptions options) {
         this.openapiFilePath = openapiFilePath;
         this.ignoreOpenapiErrors = ignoreOpenapiErrors;
         this.options = options;
@@ -56,7 +56,7 @@ class AtlassianOpenApiValidator implements OpenApiValidator {
     public ValidationResult validateResponse(final LoggedRequest request, final Response response) {
         final com.atlassian.oai.validator.model.Request atlassianRequest = convertRequest(request);
         final com.atlassian.oai.validator.model.Response convertedResponse = convertResponse(response);
-        ValidationReport responseReport = atlassianValidator.validateResponse(
+        final ValidationReport responseReport = atlassianValidator.validateResponse(
                 atlassianRequest.getPath(), atlassianRequest.getMethod(), convertedResponse);
         return createValidationResult(responseReport);
     }
@@ -66,7 +66,7 @@ class AtlassianOpenApiValidator implements OpenApiValidator {
                                                                      final OpenApiValidatorOptions options) {
         final ImmutableList<String> ignoredErrors = options.getIgnoredErrors();
 
-        OpenApiInteractionValidator.Builder builder = createValidatorBuilder(openapiFilePath, ignoreOpenapiErrors);
+        final OpenApiInteractionValidator.Builder builder = createValidatorBuilder(openapiFilePath, ignoreOpenapiErrors);
 
         return builder
                 .withLevelResolver(LevelResolver.create()
@@ -81,9 +81,9 @@ class AtlassianOpenApiValidator implements OpenApiValidator {
 
     private static OpenApiInteractionValidator.Builder createValidatorBuilder(final String openapiFilePath,
                                                                               final boolean ignoreOpenapiErrors) {
-        return ignoreOpenapiErrors ?
-                createValidatorBuilderIgnoringOpenapiErrors(openapiFilePath) :
-                OpenApiInteractionValidator.createForSpecificationUrl(openapiFilePath);
+        return ignoreOpenapiErrors
+                ? createValidatorBuilderIgnoringOpenapiErrors(openapiFilePath)
+                : OpenApiInteractionValidator.createForSpecificationUrl(openapiFilePath);
     }
 
     private static OpenApiInteractionValidator.Builder createValidatorBuilderIgnoringOpenapiErrors(final String openapiFilePath) {
@@ -104,13 +104,13 @@ class AtlassianOpenApiValidator implements OpenApiValidator {
     }
 
     private static com.atlassian.oai.validator.model.Request convertRequest(final Request request) {
-        SimpleRequest.Builder builder = new SimpleRequest.Builder(
+        final SimpleRequest.Builder builder = new SimpleRequest.Builder(
                 request.getMethod().toString(), request.getUrl());
 
-        Map<String, QueryParameter> queryParameters = Urls.splitQuery(URI.create(request.getUrl()));
+        final Map<String, QueryParameter> queryParameters = Urls.splitQuery(URI.create(request.getUrl()));
         queryParameters.forEach((k, v) -> builder.withQueryParam(v.key(), v.values()));
 
-        for (String key : request.getAllHeaderKeys()) {
+        for (final String key : request.getAllHeaderKeys()) {
             builder.withHeader(key, request.getHeader(key));
         }
 
@@ -120,7 +120,7 @@ class AtlassianOpenApiValidator implements OpenApiValidator {
     }
 
     private static com.atlassian.oai.validator.model.Response convertResponse(final Response response) {
-        SimpleResponse.Builder builder = new SimpleResponse.Builder(response.getStatus())
+        final SimpleResponse.Builder builder = new SimpleResponse.Builder(response.getStatus())
                 .withBody(response.getBody());
         response.getHeaders().all().forEach((header) -> builder.withHeader(header.key(), header.values()));
         return builder.build();

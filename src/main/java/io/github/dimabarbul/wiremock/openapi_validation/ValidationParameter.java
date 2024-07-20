@@ -4,7 +4,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.common.base.CaseFormat;
 
-class ValidationParameter {
+final class ValidationParameter {
 
     public static final ValidationParameter OPENAPI_FILE_PATH = new ValidationParameter("openapi_validation_file_path");
     public static final ValidationParameter FAILURE_STATUS_CODE = new ValidationParameter("openapi_validation_failure_status_code");
