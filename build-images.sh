@@ -2,8 +2,12 @@
 
 set -e
 
-if [ ! -f target/wiremock-openapi-validation-extension-*.jar ]; then
-    echo 'Run `mvn clean package` before building images.'
+if [ "$1" = "--help" -o "$1" = "-h" ]; then
+    echo "Just execute the script"
+    echo "Environment variables:"
+    echo "  NOBUILD - empty to build docker images, non-empty to skip build"
+    echo "  PUSH    - non-empty to push docker images to docker registry"
+    echo "            empty to skip push"
     exit 1;
 fi
 
@@ -17,6 +21,11 @@ if [ -z "${PUSH}" ]; then
 else
     PUSH=true;
 fi
+if [ -z "${NOBUILD}" ]; then
+    BUILD=true;
+else
+    BUILD=false;
+fi
 
 echo
 echo "Project version:         ${PROJECT_VERSION}"
@@ -26,19 +35,22 @@ echo "Image alpine version:    ${IMAGE_VERSION_ALPINE}"
 echo "Push:                    ${PUSH}"
 echo
 
-echo "Building ${IMAGE_VERSION}"
-docker build -t ${IMAGE_NAME}:${IMAGE_VERSION} .
-echo "Building ${IMAGE_VERSION_ALPINE}"
-docker build -t ${IMAGE_NAME}:${IMAGE_VERSION_ALPINE} -f Dockerfile-alpine .
-echo "Tagging alpine latest"
-docker tag ${IMAGE_NAME}:${IMAGE_VERSION_ALPINE} ${IMAGE_NAME}:latest
+if [ ! -f target/wiremock-openapi-validation-extension-${PROJECT_VERSION}.jar ]; then
+    echo 'Run `mvn clean package` before building images.'
+    exit 1;
+fi
+
+if [ "${BUILD}" = "true" ]; then
+    echo "Building ${IMAGE_VERSION}"
+    docker build -t ${IMAGE_NAME}:${IMAGE_VERSION} .
+    echo "Building ${IMAGE_VERSION_ALPINE}"
+    docker build -t ${IMAGE_NAME}:${IMAGE_VERSION_ALPINE} -f Dockerfile-alpine .
+fi
 
 if [ "${PUSH}" = "true" ]; then
     echo "Pushing ${IMAGE_VERSION}"
     docker push ${IMAGE_NAME}:${IMAGE_VERSION}
     echo "Pushing ${IMAGE_VERSION_ALPINE}"
     docker push ${IMAGE_NAME}:${IMAGE_VERSION_ALPINE}
-    echo "Pushing latest"
-    docker push ${IMAGE_NAME}:latest
 fi
 

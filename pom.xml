@@ -36,8 +36,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.build.outputTimestamp>2023-01-01T00:00:00Z</project.build.outputTimestamp>
-    <maven.compiler.source>11</maven.compiler.source>
-    <maven.compiler.target>11</maven.compiler.target>
+    <maven.compiler.release>11</maven.compiler.release>
   </properties>
 
   <dependencies>
@@ -194,6 +193,36 @@
             <goals>
               <goal>check</goal>
             </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.3.0</version>
+        <configuration>
+          <executable>${basedir}/build-images.sh</executable>
+        </configuration>
+        <executions>
+          <execution>
+            <id>build docker images</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>push docker images</id>
+            <phase>deploy</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <environmentVariables>
+                <NOBUILD>1</NOBUILD>
+                <PUSH>1</PUSH>
+              </environmentVariables>
+            </configuration>
           </execution>
         </executions>
       </plugin>
