@@ -1,4 +1,4 @@
-package io.github.dimabarbul.WiremockOpenapiValidationExtension;
+package io.github.dimabarbul.wiremock.openapi_validation;
 
 import com.github.tomakehurst.wiremock.http.Response;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;

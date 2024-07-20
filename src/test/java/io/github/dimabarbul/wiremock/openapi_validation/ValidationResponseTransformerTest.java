@@ -1,4 +1,4 @@
-package io.github.dimabarbul.WiremockOpenapiValidationExtension;
+package io.github.dimabarbul.wiremock.openapi_validation;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.created;
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
@@ -9,9 +9,9 @@ import static com.github.tomakehurst.wiremock.client.WireMock.noContent;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static io.github.dimabarbul.WiremockOpenapiValidationExtension.RequestBuilder.deleteRequest;
-import static io.github.dimabarbul.WiremockOpenapiValidationExtension.RequestBuilder.getRequest;
-import static io.github.dimabarbul.WiremockOpenapiValidationExtension.RequestBuilder.postJsonRequest;
+import static io.github.dimabarbul.wiremock.openapi_validation.RequestBuilder.deleteRequest;
+import static io.github.dimabarbul.wiremock.openapi_validation.RequestBuilder.getRequest;
+import static io.github.dimabarbul.wiremock.openapi_validation.RequestBuilder.postJsonRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatNoException;

@@ -1,4 +1,4 @@
-package io.github.dimabarbul.WiremockOpenapiValidationExtension;
+package io.github.dimabarbul.wiremock.openapi_validation;
 
 import java.util.ArrayList;
 import java.util.List;
