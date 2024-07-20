@@ -42,7 +42,8 @@ abstract class ValidationResponseTransformerTest {
     private static final String GET_USERS_URL = "/users";
     private static final String ADD_USER_URL = "/users";
     private static final String DELETE_USER_URL = "/users/123";
-    private static final String OPENAPI_FILE_PATH = "src/test/resources/openapi.json";
+    private static final String JSON_OPENAPI_FILE_PATH = "src/test/resources/openapi.json";
+    private static final String YAML_OPENAPI_FILE_PATH = "src/test/resources/openapi.yaml";
     private static final String INVALID_OPENAPI_FILE_PATH = "src/test/resources/invalid_openapi.json";
 
     private final DirectCallHttpServerFactory factory;
@@ -337,6 +338,21 @@ abstract class ValidationResponseTransformerTest {
                         .withOpenapiFilePath(INVALID_OPENAPI_FILE_PATH))));
     }
 
+    @Test
+    void testRequestBodyMissesRequiredPropertiesWhenUsingYamlOpenapiFile() {
+        WireMockServer wm = new WireMockServer(getWireMockConfiguration(ExtensionOptions.builder()
+                .withOpenapiFilePath(YAML_OPENAPI_FILE_PATH)));
+        DirectCallHttpServer server = factory.getHttpServer();
+
+        wm.stubFor(post(ADD_USER_URL)
+                .willReturn(created()));
+
+        Response response = server.stubRequest(postJsonRequest(wm.url(ADD_USER_URL), "{}"));
+
+        assertResponseFailedBecauseOfValidation(response);
+        assertThat(response.getBodyAsString()).contains("Object has missing required properties");
+    }
+
     private WireMockConfiguration getDefaultWireMockConfiguration() {
         return getWireMockConfiguration(ExtensionOptions.builder());
     }
@@ -346,7 +362,7 @@ abstract class ValidationResponseTransformerTest {
                 .httpServerFactory(factory)
                 .extensions(new ValidationResponseTransformer(builder
                         .withValidatorName(validatorName)
-                        .withOpenapiFilePath(Optional.ofNullable(builder.getOpenapiFilePath()).orElse(OPENAPI_FILE_PATH))
+                        .withOpenapiFilePath(Optional.ofNullable(builder.getOpenapiFilePath()).orElse(JSON_OPENAPI_FILE_PATH))
                         .build()));
     }
 
