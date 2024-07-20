@@ -13,15 +13,19 @@ import static io.github.dimabarbul.WiremockOpenapiValidationExtension.RequestBui
 import static io.github.dimabarbul.WiremockOpenapiValidationExtension.RequestBuilder.getRequest;
 import static io.github.dimabarbul.WiremockOpenapiValidationExtension.RequestBuilder.postJsonRequest;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.Test;
 
+import com.atlassian.oai.validator.OpenApiInteractionValidator;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
@@ -39,6 +43,7 @@ abstract class ValidationResponseTransformerTest {
     private static final String ADD_USER_URL = "/users";
     private static final String DELETE_USER_URL = "/users/123";
     private static final String OPENAPI_FILE_PATH = "src/test/resources/openapi.json";
+    private static final String INVALID_OPENAPI_FILE_PATH = "src/test/resources/invalid_openapi.json";
 
     private final DirectCallHttpServerFactory factory;
     private final DirectCallHttpServer server;
@@ -316,6 +321,22 @@ abstract class ValidationResponseTransformerTest {
         assertThat(response.getBodyAsString()).contains("validation.response.status.unknown");
     }
 
+    @Test
+    void testInvalidOpenapiFileThrowsException() {
+        assertThatExceptionOfType(OpenApiInteractionValidator.ApiLoadException.class)
+                .isThrownBy(() ->
+                        new WireMockServer(getWireMockConfiguration(ExtensionOptions.builder()
+                                .withOpenapiFilePath(INVALID_OPENAPI_FILE_PATH))));
+    }
+
+    @Test
+    void testInvalidOpenapiErrorsCanBeIgnored() {
+        assertThatNoException()
+                .isThrownBy(() -> new WireMockServer(getWireMockConfiguration(ExtensionOptions.builder()
+                        .ignoreOpenapiErrors(true)
+                        .withOpenapiFilePath(INVALID_OPENAPI_FILE_PATH))));
+    }
+
     private WireMockConfiguration getDefaultWireMockConfiguration() {
         return getWireMockConfiguration(ExtensionOptions.builder());
     }
@@ -325,7 +346,7 @@ abstract class ValidationResponseTransformerTest {
                 .httpServerFactory(factory)
                 .extensions(new ValidationResponseTransformer(builder
                         .withValidatorName(validatorName)
-                        .withOpenapiFilePath(OPENAPI_FILE_PATH)
+                        .withOpenapiFilePath(Optional.ofNullable(builder.getOpenapiFilePath()).orElse(OPENAPI_FILE_PATH))
                         .build()));
     }
 

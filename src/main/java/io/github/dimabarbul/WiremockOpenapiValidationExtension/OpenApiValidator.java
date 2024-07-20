@@ -13,6 +13,7 @@ interface OpenApiValidator {
         if (ATLASSIAN_VALIDATOR_NAME.equals(validatorName)) {
             return new AtlassianOpenApiValidator(
                     options.getOpenapiFilePath(),
+                    options.shouldIgnoreOpenapiErrors(),
                     OpenApiValidatorOptions.fromExtensionOptions(options));
         }
 

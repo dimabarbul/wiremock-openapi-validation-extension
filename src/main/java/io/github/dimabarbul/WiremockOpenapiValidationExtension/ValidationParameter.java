@@ -10,6 +10,7 @@ class ValidationParameter {
     public static final ValidationParameter FAILURE_STATUS_CODE = new ValidationParameter("openapi_validation_failure_status_code");
     public static final ValidationParameter IGNORE_ERRORS = new ValidationParameter("openapi_validation_ignore_errors");
     public static final ValidationParameter VALIDATOR_NAME = new ValidationParameter("openapi_validation_validator_name");
+    public static final ValidationParameter IGNORE_OPENAPI_ERRORS = new ValidationParameter("openapi_validation_ignore_openapi_errors");
 
     /**
      * Name in lower_snake_case format.

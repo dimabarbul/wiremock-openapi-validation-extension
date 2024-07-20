@@ -16,17 +16,24 @@ import com.github.tomakehurst.wiremock.http.Response;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import com.google.common.collect.ImmutableList;
 
+import io.swagger.parser.OpenAPIParser;
+import io.swagger.v3.parser.core.models.ParseOptions;
+import io.swagger.v3.parser.core.models.SwaggerParseResult;
+
 class AtlassianOpenApiValidator implements OpenApiValidator {
 
     private final String openapiFilePath;
+    private final boolean ignoreOpenapiErrors;
     private final OpenApiValidatorOptions options;
     private final OpenApiInteractionValidator atlassianValidator;
 
     public AtlassianOpenApiValidator(final String openapiFilePath,
+                                     final boolean ignoreOpenapiErrors,
                                      final OpenApiValidatorOptions options) {
         this.openapiFilePath = openapiFilePath;
+        this.ignoreOpenapiErrors = ignoreOpenapiErrors;
         this.options = options;
-        atlassianValidator = buildOpenApiValidator(openapiFilePath, options);
+        atlassianValidator = buildOpenApiValidator(openapiFilePath, ignoreOpenapiErrors, options);
     }
 
     @Override
@@ -35,7 +42,7 @@ class AtlassianOpenApiValidator implements OpenApiValidator {
             return this;
         }
 
-        return new AtlassianOpenApiValidator(this.openapiFilePath, options);
+        return new AtlassianOpenApiValidator(openapiFilePath, ignoreOpenapiErrors, options);
     }
 
     @Override
@@ -54,11 +61,14 @@ class AtlassianOpenApiValidator implements OpenApiValidator {
         return createValidationResult(responseReport);
     }
 
-    private static OpenApiInteractionValidator buildOpenApiValidator(
-            final String openapiFilePath, final OpenApiValidatorOptions options) {
+    private static OpenApiInteractionValidator buildOpenApiValidator(final String openapiFilePath,
+                                                                     final boolean ignoreOpenapiErrors,
+                                                                     final OpenApiValidatorOptions options) {
         final ImmutableList<String> ignoredErrors = options.getIgnoredErrors();
 
-        return OpenApiInteractionValidator.createForSpecificationUrl(openapiFilePath)
+        OpenApiInteractionValidator.Builder builder = createValidatorBuilder(openapiFilePath, ignoreOpenapiErrors);
+
+        return builder
                 .withLevelResolver(LevelResolver.create()
                         .withLevels(ignoredErrors
                                 .stream()
@@ -67,6 +77,30 @@ class AtlassianOpenApiValidator implements OpenApiValidator {
                                         e -> ValidationReport.Level.IGNORE)))
                         .build())
                 .build();
+    }
+
+    private static OpenApiInteractionValidator.Builder createValidatorBuilder(final String openapiFilePath,
+                                                                              final boolean ignoreOpenapiErrors) {
+        return ignoreOpenapiErrors ?
+                createValidatorBuilderIgnoringOpenapiErrors(openapiFilePath) :
+                OpenApiInteractionValidator.createForSpecificationUrl(openapiFilePath);
+    }
+
+    private static OpenApiInteractionValidator.Builder createValidatorBuilderIgnoringOpenapiErrors(final String openapiFilePath) {
+        final SwaggerParseResult swaggerParseResult = new OpenAPIParser().readLocation(openapiFilePath, null, defaultParseOptions());
+        if (swaggerParseResult.getOpenAPI() == null) {
+            throw new OpenApiInteractionValidator.ApiLoadException(openapiFilePath, swaggerParseResult);
+        }
+
+        return OpenApiInteractionValidator.createFor(swaggerParseResult.getOpenAPI());
+    }
+
+    private static ParseOptions defaultParseOptions() {
+        final ParseOptions parseOptions = new ParseOptions();
+        parseOptions.setResolve(true);
+        parseOptions.setResolveFully(true);
+        parseOptions.setResolveCombinators(false);
+        return parseOptions;
     }
 
     private static com.atlassian.oai.validator.model.Request convertRequest(final Request request) {

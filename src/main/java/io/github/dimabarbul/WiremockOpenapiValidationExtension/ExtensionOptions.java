@@ -21,15 +21,18 @@ public class ExtensionOptions {
     private static final int DEFAULT_FAILURE_STATUS_CODE = 500;
 
     private final String openapiFilePath;
+    private final boolean ignoreOpenapiErrors;
     private final String validatorName;
     private final int failureStatusCode;
     private final ImmutableList<String> ignoredErrors;
 
     private ExtensionOptions(final String openapiFilePath,
+                             final boolean ignoreOpenapiErrors,
                              final String validatorName,
                              final int failureStatusCode,
                              final ImmutableList<String> ignoredErrors) {
         this.openapiFilePath = openapiFilePath;
+        this.ignoreOpenapiErrors = ignoreOpenapiErrors;
         this.validatorName = validatorName;
         this.failureStatusCode = failureStatusCode;
         this.ignoredErrors = requireNonNull(ignoredErrors);
@@ -64,6 +67,9 @@ public class ExtensionOptions {
         Builder builder = builder();
         getGlobalParameter(systemAccessor, ValidationParameter.OPENAPI_FILE_PATH).ifPresent(builder::withOpenapiFilePath);
         getGlobalParameter(systemAccessor, ValidationParameter.VALIDATOR_NAME).ifPresent(builder::withValidatorName);
+        getGlobalParameter(systemAccessor, ValidationParameter.IGNORE_OPENAPI_ERRORS)
+                .map(Boolean::parseBoolean)
+                .ifPresent(builder::ignoreOpenapiErrors);
         getGlobalParameter(systemAccessor, ValidationParameter.FAILURE_STATUS_CODE)
                 .map(Integer::parseInt)
                 .ifPresent(builder::withFailureStatusCode);
@@ -85,6 +91,10 @@ public class ExtensionOptions {
         return openapiFilePath;
     }
 
+    public boolean shouldIgnoreOpenapiErrors() {
+        return ignoreOpenapiErrors;
+    }
+
     public int getFailureStatusCode() {
         return failureStatusCode;
     }
@@ -100,6 +110,7 @@ public class ExtensionOptions {
     public static final class Builder {
 
         private String openapiFilePath = null;
+        private boolean ignoreOpenapiErrors = false;
         private String validatorName = "atlassian";
         private int failureStatusCode = DEFAULT_FAILURE_STATUS_CODE;
         private List<String> ignoredErrors = List.of();
@@ -110,21 +121,22 @@ public class ExtensionOptions {
         public Builder(final ExtensionOptions options) {
             openapiFilePath = options.getOpenapiFilePath();
             validatorName = options.getValidatorName();
+            ignoreOpenapiErrors = options.shouldIgnoreOpenapiErrors();
             failureStatusCode = options.getFailureStatusCode();
             ignoredErrors = options.getIgnoredErrors();
         }
 
-        public ExtensionOptions.Builder withOpenapiFilePath(final String openapiFilePath) {
+        public Builder withOpenapiFilePath(final String openapiFilePath) {
             this.openapiFilePath = openapiFilePath;
             return this;
         }
 
-        public ExtensionOptions.Builder withFailureStatusCode(final int failureStatusCode) {
+        public Builder withFailureStatusCode(final int failureStatusCode) {
             this.failureStatusCode = failureStatusCode;
             return this;
         }
 
-        public ExtensionOptions.Builder withIgnoredErrors(final List<String> ignoredErrors) {
+        public Builder withIgnoredErrors(final List<String> ignoredErrors) {
             this.ignoredErrors = ignoredErrors;
             return this;
         }
@@ -134,18 +146,36 @@ public class ExtensionOptions {
             return this;
         }
 
+        public Builder ignoreOpenapiErrors(boolean ignoreOpenapiErrors) {
+            this.ignoreOpenapiErrors = ignoreOpenapiErrors;
+            return this;
+        }
+
+        public String getOpenapiFilePath() {
+            return openapiFilePath;
+        }
+
         public ExtensionOptions build() {
             return new ExtensionOptions(
-                    openapiFilePath, validatorName, failureStatusCode, ImmutableList.copyOf(ignoredErrors));
+                    openapiFilePath, ignoreOpenapiErrors, validatorName, failureStatusCode, ImmutableList.copyOf(ignoredErrors));
         }
 
         Builder mergeWith(final ValidationTransformerParameters parameters) {
+            mergeFailureStatusCode(parameters);
+            mergeIgnoredErrors(parameters);
+
+            return this;
+        }
+
+        private void mergeFailureStatusCode(final ValidationTransformerParameters parameters) {
             Optional.ofNullable(parameters.getFailureStatusCode()).ifPresent(this::withFailureStatusCode);
+        }
+
+        private void mergeIgnoredErrors(final ValidationTransformerParameters parameters) {
             Map<String, Boolean> ignoredErrorsFromParameters = parameters.getIgnoredErrors();
 
-            final Set<String> resultIgnoredErrors = new HashSet<>(ignoredErrors);
-
             if (!ignoredErrorsFromParameters.isEmpty()) {
+                final Set<String> resultIgnoredErrors = new HashSet<>(ignoredErrors);
                 ignoredErrorsFromParameters.entrySet()
                         .stream()
                         .filter(Map.Entry::getValue)
@@ -159,8 +189,6 @@ public class ExtensionOptions {
 
                 ignoredErrors = List.copyOf(resultIgnoredErrors);
             }
-
-            return this;
         }
     }
 }
