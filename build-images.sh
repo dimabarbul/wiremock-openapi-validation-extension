@@ -2,6 +2,11 @@
 
 set -e
 
+if [ ! -f target/wiremock-openapi-validation-extension-*.jar ]; then
+    echo 'Run `mvn clean package` before building images.'
+    exit 1;
+fi
+
 echo "Calculating project version"
 PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
 IMAGE_NAME=dimabarbul/wiremock-openapi-validation
