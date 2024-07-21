@@ -33,6 +33,9 @@ import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 public final class ValidationResponseTransformer implements ResponseTransformerV2 {
 
     private static final List<String> DEFAULT_OPENAPI_FILE_PATHS = List.of(
+            "openapi.json",
+            "openapi.yaml",
+            "openapi.yml",
             "/home/wiremock/openapi.json",
             "/home/wiremock/openapi.yaml",
             "/home/wiremock/openapi.yml");
