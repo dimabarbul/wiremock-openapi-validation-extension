@@ -23,17 +23,17 @@ import io.swagger.v3.parser.core.models.SwaggerParseResult;
 class AtlassianOpenApiValidator implements OpenApiValidator {
 
     private final String openapiFilePath;
-    private final boolean ignoreOpenapiErrors;
+    private final boolean allowInvalidOpenapi;
     private final OpenApiValidatorOptions options;
     private final OpenApiInteractionValidator atlassianValidator;
 
     AtlassianOpenApiValidator(final String openapiFilePath,
-                              final boolean ignoreOpenapiErrors,
+                              final boolean allowInvalidOpenapi,
                               final OpenApiValidatorOptions options) {
         this.openapiFilePath = openapiFilePath;
-        this.ignoreOpenapiErrors = ignoreOpenapiErrors;
+        this.allowInvalidOpenapi = allowInvalidOpenapi;
         this.options = options;
-        atlassianValidator = buildOpenApiValidator(openapiFilePath, ignoreOpenapiErrors, options);
+        atlassianValidator = buildOpenApiValidator(openapiFilePath, allowInvalidOpenapi, options);
     }
 
     @Override
@@ -42,7 +42,7 @@ class AtlassianOpenApiValidator implements OpenApiValidator {
             return this;
         }
 
-        return new AtlassianOpenApiValidator(openapiFilePath, ignoreOpenapiErrors, options);
+        return new AtlassianOpenApiValidator(openapiFilePath, allowInvalidOpenapi, options);
     }
 
     @Override
@@ -62,11 +62,11 @@ class AtlassianOpenApiValidator implements OpenApiValidator {
     }
 
     private static OpenApiInteractionValidator buildOpenApiValidator(final String openapiFilePath,
-                                                                     final boolean ignoreOpenapiErrors,
+                                                                     final boolean allowInvalidOpenapi,
                                                                      final OpenApiValidatorOptions options) {
         final ImmutableList<String> ignoredErrors = options.getIgnoredErrors();
 
-        final OpenApiInteractionValidator.Builder builder = createValidatorBuilder(openapiFilePath, ignoreOpenapiErrors);
+        final OpenApiInteractionValidator.Builder builder = createValidatorBuilder(openapiFilePath, allowInvalidOpenapi);
 
         return builder
                 .withLevelResolver(LevelResolver.create()
@@ -80,8 +80,8 @@ class AtlassianOpenApiValidator implements OpenApiValidator {
     }
 
     private static OpenApiInteractionValidator.Builder createValidatorBuilder(final String openapiFilePath,
-                                                                              final boolean ignoreOpenapiErrors) {
-        return ignoreOpenapiErrors
+                                                                              final boolean allowInvalidOpenapi) {
+        return allowInvalidOpenapi
                 ? createValidatorBuilderIgnoringOpenapiErrors(openapiFilePath)
                 : OpenApiInteractionValidator.createForSpecificationUrl(openapiFilePath);
     }

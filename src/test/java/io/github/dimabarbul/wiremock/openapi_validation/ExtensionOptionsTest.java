@@ -29,20 +29,20 @@ class ExtensionOptionsTest {
         assertThat(options).isNotNull();
         assertAll("correct default parameters",
                 () -> assertThat(options.getOpenapiFilePath()).isNull(),
+                () -> assertThat(options.isInvalidOpenapiAllowed()).isFalse(),
                 () -> assertThat(options.getFailureStatusCode()).isEqualTo(500),
                 () -> assertThat(options.getIgnoredErrors()).isEmpty(),
-                () -> assertThat(options.getValidatorName()).isEqualTo("atlassian"),
-                () -> assertThat(options.shouldIgnoreOpenapiErrors()).isFalse());
+                () -> assertThat(options.getValidatorName()).isEqualTo("atlassian"));
     }
 
     @Test
     public void testFromSystemParametersEverythingIsSetInSystemProperties() {
         final SystemAccessor systemAccessor = new TestSystemAccessor.Builder()
                 .addSystemProperties("openapi_validation_file_path", "test")
+                .addSystemProperties("openapi_validation_allow_invalid_openapi", "true")
                 .addSystemProperties("openapi_validation_failure_status_code", "512")
                 .addSystemProperties("openapi_validation_ignore_errors", "1,2, 3 ")
                 .addSystemProperties("openapi_validation_validator_name", "validator")
-                .addSystemProperties("openapi_validation_ignore_openapi_errors", "true")
                 .build();
 
         ExtensionOptions options = ExtensionOptions
@@ -51,20 +51,20 @@ class ExtensionOptionsTest {
         assertThat(options).isNotNull();
         assertAll("correct filled parameters",
                 () -> assertThat(options.getOpenapiFilePath()).isEqualTo("test"),
+                () -> assertThat(options.isInvalidOpenapiAllowed()).isTrue(),
                 () -> assertThat(options.getFailureStatusCode()).isEqualTo(512),
                 () -> assertThat(options.getIgnoredErrors()).containsExactly("1", "2", "3"),
-                () -> assertThat(options.getValidatorName()).isEqualTo("validator"),
-                () -> assertThat(options.shouldIgnoreOpenapiErrors()).isTrue());
+                () -> assertThat(options.getValidatorName()).isEqualTo("validator"));
     }
 
     @Test
     public void testFromSystemParametersEverythingIsSetInEnvironmentVariables() {
         final SystemAccessor systemAccessor = new TestSystemAccessor.Builder()
                 .addEnvironmentVariables("OPENAPI_VALIDATION_FILE_PATH", "test")
+                .addEnvironmentVariables("OPENAPI_VALIDATION_ALLOW_INVALID_OPENAPI", "true")
                 .addEnvironmentVariables("OPENAPI_VALIDATION_FAILURE_STATUS_CODE", "512")
                 .addEnvironmentVariables("OPENAPI_VALIDATION_IGNORE_ERRORS", "1, 2 ,3")
                 .addEnvironmentVariables("OPENAPI_VALIDATION_VALIDATOR_NAME", "validator")
-                .addEnvironmentVariables("OPENAPI_VALIDATION_IGNORE_OPENAPI_ERRORS", "true")
                 .build();
 
         ExtensionOptions options = ExtensionOptions
@@ -73,10 +73,10 @@ class ExtensionOptionsTest {
         assertThat(options).isNotNull();
         assertAll("correct filled parameters",
                 () -> assertThat(options.getOpenapiFilePath()).isEqualTo("test"),
+                () -> assertThat(options.isInvalidOpenapiAllowed()).isTrue(),
                 () -> assertThat(options.getFailureStatusCode()).isEqualTo(512),
                 () -> assertThat(options.getIgnoredErrors()).containsExactly("1", "2", "3"),
-                () -> assertThat(options.getValidatorName()).isEqualTo("validator"),
-                () -> assertThat(options.shouldIgnoreOpenapiErrors()).isTrue());
+                () -> assertThat(options.getValidatorName()).isEqualTo("validator"));
     }
 
     @Test
@@ -84,8 +84,8 @@ class ExtensionOptionsTest {
             throws JsonProcessingException {
         final ExtensionOptions originalOptions = ExtensionOptions.builder()
                 .withOpenapiFilePath("filePath")
+                .withInvalidOpenapiAllowed(true)
                 .withValidatorName("validator")
-                .ignoreOpenapiErrors(true)
                 .withFailureStatusCode(123)
                 .withIgnoredErrors(List.of("error1", "error2"))
                 .build();
@@ -98,10 +98,10 @@ class ExtensionOptionsTest {
 
         assertAll("merged options are correct",
                 () -> assertThat(mergedOptions.getOpenapiFilePath()).isEqualTo(originalOptions.getOpenapiFilePath()),
+                () -> assertThat(mergedOptions.getIgnoredErrors()).isSameAs(originalOptions.getIgnoredErrors()),
                 () -> assertThat(mergedOptions.getValidatorName()).isEqualTo(originalOptions.getValidatorName()),
-                () -> assertThat(mergedOptions.shouldIgnoreOpenapiErrors()).isEqualTo(originalOptions.shouldIgnoreOpenapiErrors()),
-                () -> assertThat(mergedOptions.getFailureStatusCode()).isEqualTo(originalOptions.getFailureStatusCode()),
-                () -> assertThat(mergedOptions.getIgnoredErrors()).isSameAs(originalOptions.getIgnoredErrors()));
+                () -> assertThat(mergedOptions.isInvalidOpenapiAllowed()).isEqualTo(originalOptions.isInvalidOpenapiAllowed()),
+                () -> assertThat(mergedOptions.getFailureStatusCode()).isEqualTo(originalOptions.getFailureStatusCode()));
     }
 
     @Test
@@ -109,8 +109,8 @@ class ExtensionOptionsTest {
             throws JsonProcessingException {
         final ExtensionOptions originalOptions = ExtensionOptions.builder()
                 .withOpenapiFilePath("filePath")
+                .withInvalidOpenapiAllowed(true)
                 .withValidatorName("validator")
-                .ignoreOpenapiErrors(true)
                 .withFailureStatusCode(123)
                 .withIgnoredErrors(List.of("error1", "error2", "error3"))
                 .build();
@@ -121,8 +121,8 @@ class ExtensionOptionsTest {
                                 .set("transformerParameters", jsonFactory.objectNode()
                                         .setAll(Map.<String, JsonNode>of(
                                                 "openapiValidationOpenapiFilePath", jsonFactory.textNode("anotherFile"),
-                                                "openapiValidationOpenapiValidatorName", jsonFactory.textNode("anotherValidator"),
                                                 "openapiValidationOpenapiIgnoreOpenapiErrors", jsonFactory.booleanNode(false),
+                                                "openapiValidationOpenapiValidatorName", jsonFactory.textNode("anotherValidator"),
                                                 "openapiValidationFailureStatusCode", jsonFactory.numberNode(418),
                                                 "openapiValidationIgnoreErrors", jsonFactory.objectNode()
                                                         .setAll(Map.<String, JsonNode>of(
@@ -140,8 +140,8 @@ class ExtensionOptionsTest {
 
         assertAll("merged options are correct",
                 () -> assertThat(mergedOptions.getOpenapiFilePath()).isEqualTo(originalOptions.getOpenapiFilePath()),
+                () -> assertThat(mergedOptions.isInvalidOpenapiAllowed()).isEqualTo(originalOptions.isInvalidOpenapiAllowed()),
                 () -> assertThat(mergedOptions.getValidatorName()).isEqualTo(originalOptions.getValidatorName()),
-                () -> assertThat(mergedOptions.shouldIgnoreOpenapiErrors()).isEqualTo(originalOptions.shouldIgnoreOpenapiErrors()),
                 () -> assertThat(mergedOptions.getFailureStatusCode()).isEqualTo(parameters.getFailureStatusCode()),
                 () -> assertThat(mergedOptions.getIgnoredErrors()).containsExactlyInAnyOrder("error1", "error3", "error4"));
     }
@@ -151,8 +151,8 @@ class ExtensionOptionsTest {
             throws JsonProcessingException {
         final ExtensionOptions originalOptions = ExtensionOptions.builder()
                 .withOpenapiFilePath("filePath")
+                .withInvalidOpenapiAllowed(true)
                 .withValidatorName("validator")
-                .ignoreOpenapiErrors(true)
                 .withFailureStatusCode(123)
                 .withIgnoredErrors(List.of("error1", "error2", "error3"))
                 .build();
@@ -173,10 +173,10 @@ class ExtensionOptionsTest {
 
         assertAll("merged options are correct",
                 () -> assertThat(mergedOptions.getOpenapiFilePath()).isEqualTo(originalOptions.getOpenapiFilePath()),
+                () -> assertThat(mergedOptions.getIgnoredErrors()).isSameAs(originalOptions.getIgnoredErrors()),
                 () -> assertThat(mergedOptions.getValidatorName()).isEqualTo(originalOptions.getValidatorName()),
-                () -> assertThat(mergedOptions.shouldIgnoreOpenapiErrors()).isEqualTo(originalOptions.shouldIgnoreOpenapiErrors()),
-                () -> assertThat(mergedOptions.getFailureStatusCode()).isEqualTo(parameters.getFailureStatusCode()),
-                () -> assertThat(mergedOptions.getIgnoredErrors()).isSameAs(originalOptions.getIgnoredErrors()));
+                () -> assertThat(mergedOptions.isInvalidOpenapiAllowed()).isEqualTo(originalOptions.isInvalidOpenapiAllowed()),
+                () -> assertThat(mergedOptions.getFailureStatusCode()).isEqualTo(parameters.getFailureStatusCode()));
     }
 
     private static class TestSystemAccessor implements SystemAccessor {

@@ -21,18 +21,18 @@ public final class ExtensionOptions {
     private static final int DEFAULT_FAILURE_STATUS_CODE = 500;
 
     private final String openapiFilePath;
-    private final boolean ignoreOpenapiErrors;
+    private final boolean allowInvalidOpenapi;
     private final String validatorName;
     private final int failureStatusCode;
     private final ImmutableList<String> ignoredErrors;
 
     private ExtensionOptions(final String openapiFilePath,
-                             final boolean ignoreOpenapiErrors,
+                             final boolean allowInvalidOpenapi,
                              final String validatorName,
                              final int failureStatusCode,
                              final ImmutableList<String> ignoredErrors) {
         this.openapiFilePath = openapiFilePath;
-        this.ignoreOpenapiErrors = ignoreOpenapiErrors;
+        this.allowInvalidOpenapi = allowInvalidOpenapi;
         this.validatorName = validatorName;
         this.failureStatusCode = failureStatusCode;
         this.ignoredErrors = requireNonNull(ignoredErrors);
@@ -68,9 +68,9 @@ public final class ExtensionOptions {
         final Builder builder = builder();
         getGlobalParameter(systemAccessor, ValidationParameter.OPENAPI_FILE_PATH).ifPresent(builder::withOpenapiFilePath);
         getGlobalParameter(systemAccessor, ValidationParameter.VALIDATOR_NAME).ifPresent(builder::withValidatorName);
-        getGlobalParameter(systemAccessor, ValidationParameter.IGNORE_OPENAPI_ERRORS)
+        getGlobalParameter(systemAccessor, ValidationParameter.ALLOW_INVALID_OPENAPI)
                 .map(Boolean::parseBoolean)
-                .ifPresent(builder::ignoreOpenapiErrors);
+                .ifPresent(builder::withInvalidOpenapiAllowed);
         getGlobalParameter(systemAccessor, ValidationParameter.FAILURE_STATUS_CODE)
                 .map(Integer::parseInt)
                 .ifPresent(builder::withFailureStatusCode);
@@ -101,8 +101,8 @@ public final class ExtensionOptions {
      * in case of incorrect OpenAPI file.
      * @return True to allow OpenAPI file with errors, false to throw exception
      */
-    public boolean shouldIgnoreOpenapiErrors() {
-        return ignoreOpenapiErrors;
+    public boolean isInvalidOpenapiAllowed() {
+        return allowInvalidOpenapi;
     }
 
     /**
@@ -135,7 +135,7 @@ public final class ExtensionOptions {
     public static final class Builder {
 
         private String openapiFilePath = null;
-        private boolean ignoreOpenapiErrors = false;
+        private boolean allowInvalidOpenapi = false;
         private String validatorName = "atlassian";
         private int failureStatusCode = DEFAULT_FAILURE_STATUS_CODE;
         private List<String> ignoredErrors = List.of();
@@ -153,7 +153,7 @@ public final class ExtensionOptions {
         public Builder(final ExtensionOptions options) {
             openapiFilePath = options.getOpenapiFilePath();
             validatorName = options.getValidatorName();
-            ignoreOpenapiErrors = options.shouldIgnoreOpenapiErrors();
+            allowInvalidOpenapi = options.isInvalidOpenapiAllowed();
             failureStatusCode = options.getFailureStatusCode();
             ignoredErrors = options.getIgnoredErrors();
         }
@@ -201,11 +201,11 @@ public final class ExtensionOptions {
         /**
          * Set whether OpenAPI errors should be tolerated or exception should be thrown
          * in case of incorrect OpenAPI file.
-         * @param ignoreOpenapiErrors True to allow OpenAPI file with errors, false to throw exception
+         * @param allowInvalidOpenapi True to allow OpenAPI file with errors, false to throw exception
          * @return Builder
          */
-        public Builder ignoreOpenapiErrors(final boolean ignoreOpenapiErrors) {
-            this.ignoreOpenapiErrors = ignoreOpenapiErrors;
+        public Builder withInvalidOpenapiAllowed(final boolean allowInvalidOpenapi) {
+            this.allowInvalidOpenapi = allowInvalidOpenapi;
             return this;
         }
 
@@ -223,7 +223,7 @@ public final class ExtensionOptions {
          */
         public ExtensionOptions build() {
             return new ExtensionOptions(
-                    openapiFilePath, ignoreOpenapiErrors, validatorName, failureStatusCode, ImmutableList.copyOf(ignoredErrors));
+                    openapiFilePath, allowInvalidOpenapi, validatorName, failureStatusCode, ImmutableList.copyOf(ignoredErrors));
         }
 
         Builder mergeWith(final ValidationTransformerParameters parameters) {

@@ -7,10 +7,10 @@ import com.google.common.base.CaseFormat;
 final class ValidationParameter {
 
     public static final ValidationParameter OPENAPI_FILE_PATH = new ValidationParameter("openapi_validation_file_path");
+    public static final ValidationParameter ALLOW_INVALID_OPENAPI = new ValidationParameter("openapi_validation_allow_invalid_openapi");
     public static final ValidationParameter FAILURE_STATUS_CODE = new ValidationParameter("openapi_validation_failure_status_code");
     public static final ValidationParameter IGNORE_ERRORS = new ValidationParameter("openapi_validation_ignore_errors");
     public static final ValidationParameter VALIDATOR_NAME = new ValidationParameter("openapi_validation_validator_name");
-    public static final ValidationParameter IGNORE_OPENAPI_ERRORS = new ValidationParameter("openapi_validation_ignore_openapi_errors");
 
     /**
      * Name in lower_snake_case format.

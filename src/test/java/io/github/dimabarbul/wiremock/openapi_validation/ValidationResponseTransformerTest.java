@@ -334,7 +334,7 @@ abstract class ValidationResponseTransformerTest {
     void testInvalidOpenapiErrorsCanBeIgnored() {
         assertThatNoException()
                 .isThrownBy(() -> new WireMockServer(getWireMockConfiguration(ExtensionOptions.builder()
-                        .ignoreOpenapiErrors(true)
+                        .withInvalidOpenapiAllowed(true)
                         .withOpenapiFilePath(INVALID_OPENAPI_FILE_PATH))));
     }
 
