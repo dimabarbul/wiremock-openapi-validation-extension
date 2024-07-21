@@ -15,7 +15,6 @@
 # limitations under the License.
 #
 
-
 set -e
 
 if [ "$1" = "--help" -o "$1" = "-h" ]; then
@@ -42,6 +41,11 @@ if [ -z "${NOBUILD}" ]; then
 else
     BUILD=false;
 fi
+if [[ "${PROJECT_VERSION}" =~ -SNAPSHOT$ ]]; then
+    IS_SNAPSHOT_VERSION=true
+else
+    IS_SNAPSHOT_VERSION=false
+fi
 
 echo
 echo "Project version:         ${PROJECT_VERSION}"
@@ -61,6 +65,10 @@ if [ "${BUILD}" = "true" ]; then
     docker build -t ${IMAGE_NAME}:${IMAGE_VERSION} .
     echo "Building ${IMAGE_VERSION_ALPINE}"
     docker build -t ${IMAGE_NAME}:${IMAGE_VERSION_ALPINE} -f Dockerfile-alpine .
+    if [ "${IS_SNAPSHOT_VERSION}" = "false" ]; then
+        echo "Tagging alpine image with tag latest"
+        docker tag ${IMAGE_NAME}:${IMAGE_VERSION_ALPINE} ${IMAGE_NAME}:latest
+    fi
 fi
 
 if [ "${PUSH}" = "true" ]; then
@@ -68,5 +76,9 @@ if [ "${PUSH}" = "true" ]; then
     docker push ${IMAGE_NAME}:${IMAGE_VERSION}
     echo "Pushing ${IMAGE_VERSION_ALPINE}"
     docker push ${IMAGE_NAME}:${IMAGE_VERSION_ALPINE}
+    if [ "${IS_SNAPSHOT_VERSION}" = "false" ]; then
+        echo "Pushing latest"
+        docker push ${IMAGE_NAME}:latest
+    fi
 fi
 
