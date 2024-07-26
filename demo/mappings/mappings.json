@@ -1,0 +1,72 @@
+{
+  "mappings": [
+    {
+      "request": {
+        "urlPathPattern": "/users/1",
+        "method": "GET"
+      },
+      "response": {
+        "status": 200,
+        "jsonBody": {
+          "id": 1,
+          "username": "user1",
+          "role": "user"
+        },
+        "headers": {
+          "content-type": "application/json"
+        }
+      }
+    },
+    {
+      "request": {
+        "urlPathPattern": "/users/2",
+        "method": "GET"
+      },
+      "response": {
+        "status": 200,
+        "jsonBody": {
+          "id": 2,
+          "externalId": "user2",
+          "username": "user2",
+          "role": "unknown"
+        },
+        "headers": {
+          "content-type": "application/json"
+        }
+      }
+    },
+    {
+      "request": {
+        "urlPathPattern": "/users",
+        "method": "POST",
+        "bodyPatterns": [
+          {
+            "matchesJsonPath": {
+              "expression": "$.id",
+              "matches": "/^1|2$/"
+            }
+          }
+        ]
+      },
+      "response": {
+        "status": 409
+      }
+    },
+    {
+      "request": {
+        "urlPathPattern": "/users",
+        "method": "POST"
+      },
+      "response": {
+        "status": 200,
+        "body": "{ \"id\": {{randomInt lower=3 upper=9}}, \"role\": \"user\", \"username\": \"{{jsonPath request.body '$.username'}}\" }",
+        "headers": {
+          "content-type": "application/json"
+        },
+        "transformers": [
+          "response-template"
+        ]
+      }
+    }
+  ]
+}
