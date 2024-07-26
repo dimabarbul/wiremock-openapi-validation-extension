@@ -19,7 +19,12 @@ import java.net.URI;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import javax.annotation.Nonnull;
+
 import com.atlassian.oai.validator.OpenApiInteractionValidator;
+import com.atlassian.oai.validator.interaction.request.CustomRequestValidator;
+import com.atlassian.oai.validator.interaction.response.CustomResponseValidator;
+import com.atlassian.oai.validator.model.ApiOperation;
 import com.atlassian.oai.validator.model.SimpleRequest;
 import com.atlassian.oai.validator.model.SimpleResponse;
 import com.atlassian.oai.validator.report.LevelResolver;
@@ -32,6 +37,10 @@ import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import com.google.common.collect.ImmutableList;
 
 import io.swagger.parser.OpenAPIParser;
+import io.swagger.v3.oas.models.media.Content;
+import io.swagger.v3.oas.models.parameters.RequestBody;
+import io.swagger.v3.oas.models.responses.ApiResponse;
+import io.swagger.v3.oas.models.responses.ApiResponses;
 import io.swagger.v3.parser.core.models.ParseOptions;
 import io.swagger.v3.parser.core.models.SwaggerParseResult;
 
@@ -84,6 +93,8 @@ class AtlassianOpenApiValidator implements OpenApiValidator {
         final OpenApiInteractionValidator.Builder builder = createValidatorBuilder(openapiFilePath, allowInvalidOpenapi);
 
         return builder
+                .withCustomRequestValidation(new RequireContentTypeRequestValidator())
+                .withCustomResponseValidation(new RequireContentTypeResponseValidator())
                 .withLevelResolver(LevelResolver.create()
                         .withLevels(ignoredErrors
                                 .stream()
@@ -149,5 +160,68 @@ class AtlassianOpenApiValidator implements OpenApiValidator {
                 .forEach(m -> builder.addError(m.getKey(), m.getMessage()));
 
         return builder.build();
+    }
+
+    private static class RequireContentTypeRequestValidator implements CustomRequestValidator {
+
+        public static final String VALIDATION_REQUEST_CONTENT_TYPE_MISSING_KEY = "validation.request.contentType.missing";
+        public static final String VALIDATION_REQUEST_CONTENT_TYPE_MISSING_MESSAGE = "Request Content-Type header is missing";
+
+        @Override
+        public ValidationReport validate(@Nonnull final com.atlassian.oai.validator.model.Request request,
+                                         @Nonnull final ApiOperation apiOperation) {
+            final RequestBody requestBodySchema = apiOperation.getOperation().getRequestBody();
+            if (requestBodySchema == null) {
+                return ValidationReport.empty();
+            }
+
+            final Content contentSchema = requestBodySchema.getContent();
+            final boolean isContentRequired = Boolean.TRUE.equals(requestBodySchema.getRequired());
+
+            if (isContentRequired && contentSchema != null && !contentSchema.isEmpty()) {
+                if (request.getContentType().isEmpty()) {
+                    return ValidationReport.singleton(
+                            ValidationReport.Message.create(
+                                            VALIDATION_REQUEST_CONTENT_TYPE_MISSING_KEY,
+                                            VALIDATION_REQUEST_CONTENT_TYPE_MISSING_MESSAGE
+                                    )
+                                    .build());
+                }
+            }
+
+            return ValidationReport.empty();
+        }
+    }
+
+    private static class RequireContentTypeResponseValidator implements CustomResponseValidator {
+
+        public static final String VALIDATION_RESPONSE_CONTENT_TYPE_MISSING_KEY = "validation.response.contentType.missing";
+        public static final String VALIDATION_RESPONSE_CONTENT_TYPE_MISSING_MESSAGE = "Response Content-Type header is missing";
+
+        @Override
+        public ValidationReport validate(@Nonnull final com.atlassian.oai.validator.model.Response response,
+                                         @Nonnull final ApiOperation apiOperation) {
+            final ApiResponses responses = apiOperation.getOperation().getResponses();
+            final String statusString = String.valueOf(response.getStatus());
+            if (responses == null || !responses.containsKey(statusString)) {
+                return ValidationReport.empty();
+            }
+
+            final ApiResponse apiResponse = responses.get(statusString);
+            final Content contentSchema = apiResponse.getContent();
+
+            if (contentSchema != null && !contentSchema.isEmpty()) {
+                if (response.getContentType().isEmpty()) {
+                    return ValidationReport.singleton(
+                            ValidationReport.Message.create(
+                                            VALIDATION_RESPONSE_CONTENT_TYPE_MISSING_KEY,
+                                            VALIDATION_RESPONSE_CONTENT_TYPE_MISSING_MESSAGE
+                                    )
+                                    .build());
+                }
+            }
+
+            return ValidationReport.empty();
+        }
     }
 }

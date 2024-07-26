@@ -15,6 +15,7 @@
  */
 package io.github.dimabarbul.wiremock.openapi_validation;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.created;
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
@@ -27,13 +28,12 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMoc
 import static io.github.dimabarbul.wiremock.openapi_validation.RequestBuilder.deleteRequest;
 import static io.github.dimabarbul.wiremock.openapi_validation.RequestBuilder.getRequest;
 import static io.github.dimabarbul.wiremock.openapi_validation.RequestBuilder.postJsonRequest;
+import static io.github.dimabarbul.wiremock.openapi_validation.RequestBuilder.postRequestWithoutContentType;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -53,19 +53,19 @@ import com.google.common.net.MediaType;
 
 abstract class ValidationResponseTransformerTest {
 
-    private static final int DEFAULT_VALIDATION_FAILURE_STATUS_CODE = 500;
-    private static final String GET_USERS_URL = "/users";
-    private static final String ADD_USER_URL = "/users";
-    private static final String DELETE_USER_URL = "/users/123";
-    private static final String JSON_OPENAPI_FILE_PATH = "src/test/resources/openapi.json";
-    private static final String YAML_OPENAPI_FILE_PATH = "src/test/resources/openapi.yaml";
-    private static final String INVALID_OPENAPI_FILE_PATH = "src/test/resources/invalid_openapi.json";
+    protected static final int DEFAULT_VALIDATION_FAILURE_STATUS_CODE = 500;
+    protected static final String GET_USERS_URL = "/users";
+    protected static final String ADD_USER_URL = "/users";
+    protected static final String DELETE_USER_URL = "/users/123";
+    protected static final String JSON_OPENAPI_FILE_PATH = "src/test/resources/openapi.json";
+    protected static final String YAML_OPENAPI_FILE_PATH = "src/test/resources/openapi.yaml";
+    protected static final String INVALID_OPENAPI_FILE_PATH = "src/test/resources/invalid_openapi.json";
 
-    private final DirectCallHttpServerFactory factory;
-    private final DirectCallHttpServer server;
+    protected final DirectCallHttpServerFactory factory;
+    protected final DirectCallHttpServer server;
+    protected final WireMockServer wm;
 
     private final String validatorName;
-    private final WireMockServer wm;
 
     public ValidationResponseTransformerTest(final String validatorName) {
         this.validatorName = validatorName;
@@ -255,22 +255,6 @@ abstract class ValidationResponseTransformerTest {
     }
 
     @Test
-    void testGloballyIgnoreSpecificErrors() {
-        WireMockServer wm = new WireMockServer(getWireMockConfiguration(ExtensionOptions.builder()
-                .withIgnoredErrors(List.of("validation.request.body.schema.required", "validation.response.status.unknown"))));
-        DirectCallHttpServer server = factory.getHttpServer();
-
-        wm.stubFor(post(ADD_USER_URL)
-                .willReturn(jsonResponse("{}", HttpStatus.SC_OK)));
-
-        Response response = server.stubRequest(postJsonRequest(wm.url(ADD_USER_URL), "{}"));
-
-        assertThat(response.getStatus())
-                .as("response should be successful, got body \"%s\"", response.getBodyAsString())
-                .isEqualTo(HttpStatus.SC_OK);
-    }
-
-    @Test
     void testCustomResponseCodeOnValidationFailure() {
         int statusCode = 598;
         wm.stubFor(get(UrlPattern.ANY)
@@ -283,61 +267,6 @@ abstract class ValidationResponseTransformerTest {
     }
 
     @Test
-    void testIgnoreErrors() {
-        wm.stubFor(post(ADD_USER_URL)
-                .willReturn(jsonResponse("{}", HttpStatus.SC_OK)
-                        .withTransformerParameter(
-                                "openapiValidationIgnoreErrors",
-                                Map.of(
-                                        "validation.request.body.schema.required", true,
-                                        "validation.response.status.unknown", true))));
-
-        Response response = server.stubRequest(postJsonRequest(wm.url(ADD_USER_URL), "{}"));
-
-        assertThat(response.getStatus())
-                .as("response should be successful, got body \"%s\"", response.getBodyAsString())
-                .isEqualTo(HttpStatus.SC_OK);
-    }
-
-    @Test
-    void testIgnoreSpecificErrorsCanBeAddedToGlobalList() {
-        WireMockServer wm = new WireMockServer(getWireMockConfiguration(ExtensionOptions.builder()
-                .withIgnoredErrors(List.of("validation.request.body.schema.required"))));
-        DirectCallHttpServer server = factory.getHttpServer();
-
-        wm.stubFor(post(ADD_USER_URL)
-                .willReturn(jsonResponse("{}", HttpStatus.SC_OK)
-                        .withTransformerParameter(
-                                "openapiValidationIgnoreErrors",
-                                Map.of("validation.response.status.unknown", true))));
-
-        Response response = server.stubRequest(postJsonRequest(wm.url(ADD_USER_URL), "{}"));
-
-        assertThat(response.getStatus())
-                .as("response should be successful, got body \"%s\"", response.getBodyAsString())
-                .isEqualTo(HttpStatus.SC_OK);
-    }
-
-    @Test
-    void testGloballyIgnoredErrorCanBeEnabledWithTransformerParameters() {
-        WireMockServer wm = new WireMockServer(getWireMockConfiguration(ExtensionOptions.builder()
-                .withIgnoredErrors(List.of("validation.request.body.schema.required", "validation.response.status.unknown"))));
-        DirectCallHttpServer server = factory.getHttpServer();
-
-        wm.stubFor(post(ADD_USER_URL)
-                .willReturn(jsonResponse("{}", HttpStatus.SC_OK)
-                        .withTransformerParameter(
-                                "openapiValidationIgnoreErrors",
-                                Map.of("validation.response.status.unknown", false))));
-
-        Response response = server.stubRequest(postJsonRequest(wm.url(ADD_USER_URL), "{}"));
-
-        assertResponseFailedBecauseOfValidation(response);
-        assertThat(response.getBodyAsString()).doesNotContain("validation.request.body.schema.required");
-        assertThat(response.getBodyAsString()).contains("validation.response.status.unknown");
-    }
-
-    @Test
     void testInvalidOpenapiFileThrowsException() {
         assertThatExceptionOfType(OpenApiInteractionValidator.ApiLoadException.class)
                 .isThrownBy(() ->
@@ -346,7 +275,7 @@ abstract class ValidationResponseTransformerTest {
     }
 
     @Test
-    void testInvalidOpenapiErrorsCanBeIgnored() {
+    void testOpenapiErrorsCanBeIgnored() {
         assertThatNoException()
                 .isThrownBy(() -> new WireMockServer(getWireMockConfiguration(ExtensionOptions.builder()
                         .withInvalidOpenapiAllowed(true)
@@ -368,11 +297,46 @@ abstract class ValidationResponseTransformerTest {
         assertThat(response.getBodyAsString()).contains("Object has missing required properties");
     }
 
-    private WireMockConfiguration getDefaultWireMockConfiguration() {
+    @Test
+    void testRequestWithoutContentTypeThrowsException() {
+        wm.stubFor(post(ADD_USER_URL)
+                .willReturn(created()));
+
+        Response response = server.stubRequest(postRequestWithoutContentType(
+                wm.url(ADD_USER_URL),
+                JsonNodeFactory.instance.objectNode()
+                        .put("id", UUID.randomUUID().toString())
+                        .put("username", "root")
+                        .put("role", "admin")));
+
+        assertResponseFailedBecauseOfValidation(response);
+        assertThat(response.getBodyAsString()).contains("Request Content-Type header is missing");
+    }
+
+    @Test
+    void testResponseWithoutContentTypeThrowsException() {
+        wm.stubFor(get(GET_USERS_URL)
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withBody(
+                                JsonNodeFactory.instance.arrayNode()
+                                        .add(JsonNodeFactory.instance.objectNode()
+                                                .put("id", UUID.randomUUID().toString())
+                                                .put("username", "root")
+                                                .put("role", "admin"))
+                                        .toString())));
+
+        Response response = server.stubRequest(getRequest(wm.url(GET_USERS_URL)));
+
+        assertResponseFailedBecauseOfValidation(response);
+        assertThat(response.getBodyAsString()).contains("Response Content-Type header is missing");
+    }
+
+    protected WireMockConfiguration getDefaultWireMockConfiguration() {
         return getWireMockConfiguration(ExtensionOptions.builder());
     }
 
-    private WireMockConfiguration getWireMockConfiguration(final ExtensionOptions.Builder builder) {
+    protected WireMockConfiguration getWireMockConfiguration(final ExtensionOptions.Builder builder) {
         return wireMockConfig()
                 .httpServerFactory(factory)
                 .extensions(new ValidationResponseTransformer(builder
@@ -381,11 +345,11 @@ abstract class ValidationResponseTransformerTest {
                         .build()));
     }
 
-    private void assertResponseFailedBecauseOfValidation(final Response response) {
+    protected void assertResponseFailedBecauseOfValidation(final Response response) {
         assertResponseFailedBecauseOfValidation(response, DEFAULT_VALIDATION_FAILURE_STATUS_CODE);
     }
 
-    private void assertResponseFailedBecauseOfValidation(final Response response, final int statusCode) {
+    protected void assertResponseFailedBecauseOfValidation(final Response response, final int statusCode) {
         assertAll(
                 "Response failed because of OpenAPI validation",
                 () -> assertThat(response.getStatus()).isEqualTo(statusCode),

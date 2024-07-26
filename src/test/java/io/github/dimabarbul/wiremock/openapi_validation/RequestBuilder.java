@@ -40,6 +40,18 @@ class RequestBuilder {
         }
     }
 
+    public static Request postRequestWithoutContentType(final String url, final Object body) {
+        try {
+            return ImmutableRequest.create()
+                    .withMethod(RequestMethod.POST)
+                    .withAbsoluteUrl(url)
+                    .withBody(mapper.writeValueAsBytes(body))
+                    .build();
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static Request postJsonRequest(final String url, final String body) {
             return ImmutableRequest.create()
                     .withMethod(RequestMethod.POST)
