@@ -49,7 +49,14 @@ public final class ValidationResponseTransformer implements ResponseTransformerV
      */
     @SuppressWarnings("unused")
     public ValidationResponseTransformer() {
-        this(getDefaultOptions());
+        this(ExtensionOptions.fromSystemParameters());
+    }
+
+    @Override
+    public void start() {
+        if (options.shouldPrintConfiguration()) {
+            printConfiguration();
+        }
     }
 
     /**
@@ -57,7 +64,7 @@ public final class ValidationResponseTransformer implements ResponseTransformerV
      * @param options Options to use
      */
     public ValidationResponseTransformer(final ExtensionOptions options) {
-        this.options = options;
+        this.options = guessOpenapiFilePathIfAbsent(options);
         this.globalValidator = OpenApiValidator.create(this.options);
     }
 
@@ -92,14 +99,12 @@ public final class ValidationResponseTransformer implements ResponseTransformerV
         return "openapi-validation";
     }
 
-    private static ExtensionOptions getDefaultOptions() {
-        ExtensionOptions options = ExtensionOptions.fromSystemParameters();
-        if (options.getOpenapiFilePath() == null) {
-            options = ExtensionOptions.builder(options)
-                    .withOpenapiFilePath(getFirstExistingFile())
-                    .build();
-        }
-        return options;
+    private static ExtensionOptions guessOpenapiFilePathIfAbsent(final ExtensionOptions options) {
+        return options.getOpenapiFilePath() == null
+                ? ExtensionOptions.builder(options)
+                        .withOpenapiFilePath(getFirstExistingFile())
+                        .build()
+                : options;
     }
 
     private static String getFirstExistingFile() {
@@ -138,5 +143,23 @@ public final class ValidationResponseTransformer implements ResponseTransformerV
                 response.getHeaders(),
                 response.getBodyAsString()
         );
+    }
+
+    private void printConfiguration() {
+        System.out.println("------------------------------------");
+        System.out.println("|   OpenAPI Validation Extension   |");
+        System.out.println("------------------------------------");
+        System.out.println();
+        System.out.println("OpenAPI:                      " + options.getOpenapiFilePath());
+        System.out.println("Validator name:               " + options.getValidatorName());
+        System.out.println("Is invalid OpenAPI allowed:   " + options.isInvalidOpenapiAllowed());
+        System.out.println("Failure status code:          " + options.getFailureStatusCode());
+        if (options.getIgnoredErrors().isEmpty()) {
+            System.out.println("Ignored errors:               <none>");
+        } else {
+            System.out.print("Ignored errors:               ");
+            System.out.println(String.join("\n                              ", options.getIgnoredErrors()));
+        }
+        System.out.println();
     }
 }

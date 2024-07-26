@@ -35,17 +35,20 @@ public final class ExtensionOptions {
 
     private static final int DEFAULT_FAILURE_STATUS_CODE = 500;
 
+    private final boolean shouldPrintConfiguration;
     private final String openapiFilePath;
     private final boolean allowInvalidOpenapi;
     private final String validatorName;
     private final int failureStatusCode;
     private final ImmutableList<String> ignoredErrors;
 
-    private ExtensionOptions(final String openapiFilePath,
+    private ExtensionOptions(final boolean shouldPrintConfiguration,
+                             final String openapiFilePath,
                              final boolean allowInvalidOpenapi,
                              final String validatorName,
                              final int failureStatusCode,
                              final ImmutableList<String> ignoredErrors) {
+        this.shouldPrintConfiguration = shouldPrintConfiguration;
         this.openapiFilePath = openapiFilePath;
         this.allowInvalidOpenapi = allowInvalidOpenapi;
         this.validatorName = validatorName;
@@ -81,6 +84,9 @@ public final class ExtensionOptions {
     static ExtensionOptions fromSystemParameters(
             final SystemAccessor systemAccessor) {
         final Builder builder = builder();
+        getGlobalParameter(systemAccessor, ValidationParameter.PRINT_CONFIG)
+                .map(Boolean::parseBoolean)
+                .ifPresent(builder::withConfigurationPrinted);
         getGlobalParameter(systemAccessor, ValidationParameter.OPENAPI_FILE_PATH).ifPresent(builder::withOpenapiFilePath);
         getGlobalParameter(systemAccessor, ValidationParameter.VALIDATOR_NAME).ifPresent(builder::withValidatorName);
         getGlobalParameter(systemAccessor, ValidationParameter.ALLOW_INVALID_OPENAPI)
@@ -101,6 +107,14 @@ public final class ExtensionOptions {
                                                        final ValidationParameter parameter) {
         return systemAccessor.getSystemProperty(parameter)
                 .or(() -> systemAccessor.getEnvironmentVariable(parameter));
+    }
+
+    /**
+     * Get whether extension configuration should be printed on extension start.
+     * @return True if extension configuration should be printed on extension start
+     */
+    public boolean shouldPrintConfiguration() {
+        return shouldPrintConfiguration;
     }
 
     /**
@@ -149,6 +163,7 @@ public final class ExtensionOptions {
      */
     public static final class Builder {
 
+        private boolean shouldPrintConfiguration = false;
         private String openapiFilePath = null;
         private boolean allowInvalidOpenapi = false;
         private String validatorName = "atlassian";
@@ -166,11 +181,22 @@ public final class ExtensionOptions {
          * @param options Options to copy values from
          */
         public Builder(final ExtensionOptions options) {
+            shouldPrintConfiguration = options.shouldPrintConfiguration();
             openapiFilePath = options.getOpenapiFilePath();
             validatorName = options.getValidatorName();
             allowInvalidOpenapi = options.isInvalidOpenapiAllowed();
             failureStatusCode = options.getFailureStatusCode();
             ignoredErrors = options.getIgnoredErrors();
+        }
+
+        /**
+         * Set whether extension configuration should be printed on extension start.
+         * @param printConfiguration True to print extension configuration on extension start
+         * @return Builder
+         */
+        public Builder withConfigurationPrinted(final boolean printConfiguration) {
+            shouldPrintConfiguration = printConfiguration;
+            return this;
         }
 
         /**
@@ -180,6 +206,35 @@ public final class ExtensionOptions {
          */
         public Builder withOpenapiFilePath(final String openapiFilePath) {
             this.openapiFilePath = openapiFilePath;
+            return this;
+        }
+
+        /**
+         * Get OpenAPI file path.
+         * @return OpenAPI file path
+         */
+        public String getOpenapiFilePath() {
+            return openapiFilePath;
+        }
+
+        /**
+         * Set whether OpenAPI errors should be tolerated or exception should be thrown
+         * in case of incorrect OpenAPI file.
+         * @param allowInvalidOpenapi True to allow OpenAPI file with errors, false to throw exception
+         * @return Builder
+         */
+        public Builder withInvalidOpenapiAllowed(final boolean allowInvalidOpenapi) {
+            this.allowInvalidOpenapi = allowInvalidOpenapi;
+            return this;
+        }
+
+        /**
+         * Set name of validator to use.
+         * @param validatorName Name of validator to use
+         * @return Builder
+         */
+        public Builder withValidatorName(final String validatorName) {
+            this.validatorName = validatorName;
             return this;
         }
 
@@ -204,41 +259,16 @@ public final class ExtensionOptions {
         }
 
         /**
-         * Set name of validator to use.
-         * @param validatorName Name of validator to use
-         * @return Builder
-         */
-        public Builder withValidatorName(final String validatorName) {
-            this.validatorName = validatorName;
-            return this;
-        }
-
-        /**
-         * Set whether OpenAPI errors should be tolerated or exception should be thrown
-         * in case of incorrect OpenAPI file.
-         * @param allowInvalidOpenapi True to allow OpenAPI file with errors, false to throw exception
-         * @return Builder
-         */
-        public Builder withInvalidOpenapiAllowed(final boolean allowInvalidOpenapi) {
-            this.allowInvalidOpenapi = allowInvalidOpenapi;
-            return this;
-        }
-
-        /**
-         * Get OpenAPI file path.
-         * @return OpenAPI file path
-         */
-        public String getOpenapiFilePath() {
-            return openapiFilePath;
-        }
-
-        /**
          * Build extension options with values from the builder.
          * @return Extension options
          */
         public ExtensionOptions build() {
-            return new ExtensionOptions(
-                    openapiFilePath, allowInvalidOpenapi, validatorName, failureStatusCode, ImmutableList.copyOf(ignoredErrors));
+            return new ExtensionOptions(shouldPrintConfiguration,
+                    openapiFilePath,
+                    allowInvalidOpenapi,
+                    validatorName,
+                    failureStatusCode,
+                    ImmutableList.copyOf(ignoredErrors));
         }
 
         Builder mergeWith(final ValidationTransformerParameters parameters) {
