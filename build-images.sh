@@ -26,11 +26,23 @@ if [ "$1" = "--help" -o "$1" = "-h" ]; then
     exit 1;
 fi
 
+function expand_versions
+{
+    declare -a result
+    current="$1"
+
+    while [[ "$current" =~ \. ]]; do
+        result+=($current);
+        current=${current%.*}
+    done
+
+    echo "${result[@]}"
+}
+
 echo "Calculating project version"
 PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
 IMAGE_NAME=dimabarbul/wiremock-openapi-validation
 IMAGE_VERSION=$(tr '[:upper:]' '[:lower:]' <<<${PROJECT_VERSION})
-IMAGE_VERSION_ALPINE=${IMAGE_VERSION}-alpine
 if [ -z "${PUSH}" ]; then
     PUSH=false;
 else
@@ -46,12 +58,21 @@ if [[ "${PROJECT_VERSION}" =~ -SNAPSHOT$ ]]; then
 else
     IS_SNAPSHOT_VERSION=false
 fi
+if [ "$IS_SNAPSHOT_VERSION" = "false" ]; then
+    IMAGE_VERSIONS=( $(expand_versions $IMAGE_VERSION) )
+else
+    IMAGE_VERSIONS=($IMAGE_VERSION)
+fi
+declare -a IMAGE_VERSIONS_ALPINE;
+for v in "${IMAGE_VERSIONS[@]}"; do
+    IMAGE_VERSIONS_ALPINE+=("${v}-alpine")
+done
 
 echo
 echo "Project version:         ${PROJECT_VERSION}"
 echo "Image name:              ${IMAGE_NAME}"
-echo "Image version:           ${IMAGE_VERSION}"
-echo "Image alpine version:    ${IMAGE_VERSION_ALPINE}"
+echo "Image version:           ${IMAGE_VERSIONS[@]}"
+echo "Image alpine version:    ${IMAGE_VERSIONS_ALPINE[@]}"
 echo "Push:                    ${PUSH}"
 echo
 
@@ -61,24 +82,44 @@ if [ ! -f target/wiremock-openapi-validation-extension-${PROJECT_VERSION}.jar ];
 fi
 
 if [ "${BUILD}" = "true" ]; then
-    echo "Building ${IMAGE_VERSION}"
-    docker build -t ${IMAGE_NAME}:${IMAGE_VERSION} .
-    echo "Building ${IMAGE_VERSION_ALPINE}"
-    docker build -t ${IMAGE_NAME}:${IMAGE_VERSION_ALPINE} -f Dockerfile-alpine .
+    echo "Building ${IMAGE_VERSIONS[0]}"
+    docker build -t ${IMAGE_NAME}:${IMAGE_VERSIONS[0]} .
+    for v in "${IMAGE_VERSIONS[@]:1}"; do
+        echo "Tagging ${IMAGE_VERSIONS[0]} as ${v}"
+        docker tag ${IMAGE_NAME}:${IMAGE_VERSIONS[0]} ${IMAGE_NAME}:${v}
+    done
+    echo "Building ${IMAGE_VERSIONS_ALPINE[0]}"
+    docker build -t ${IMAGE_NAME}:${IMAGE_VERSIONS_ALPINE[0]} -f Dockerfile-alpine .
+    for v in "${IMAGE_VERSIONS_ALPINE[@]:1}"; do
+        echo "Tagging ${IMAGE_VERSIONS_ALPINE[0]} as ${v}"
+        docker tag ${IMAGE_NAME}:${IMAGE_VERSIONS_ALPINE[0]} ${IMAGE_NAME}:${v}
+    done
     if [ "${IS_SNAPSHOT_VERSION}" = "false" ]; then
-        echo "Tagging alpine image with tag latest"
-        docker tag ${IMAGE_NAME}:${IMAGE_VERSION_ALPINE} ${IMAGE_NAME}:latest
+        echo "Adding tag latest"
+        docker tag ${IMAGE_NAME}:${IMAGE_VERSIONS[0]} ${IMAGE_NAME}:latest
+        echo "Adding tag alpine"
+        docker tag ${IMAGE_NAME}:${IMAGE_VERSIONS_ALPINE[0]} ${IMAGE_NAME}:alpine
     fi
 fi
 
 if [ "${PUSH}" = "true" ]; then
-    echo "Pushing ${IMAGE_VERSION}"
-    docker push ${IMAGE_NAME}:${IMAGE_VERSION}
-    echo "Pushing ${IMAGE_VERSION_ALPINE}"
-    docker push ${IMAGE_NAME}:${IMAGE_VERSION_ALPINE}
+    echo "Pushing ${IMAGE_VERSIONS[0]}"
+    docker push ${IMAGE_NAME}:${IMAGE_VERSIONS[0]}
+    for v in "${IMAGE_VERSIONS[@]:1}"; do
+        echo "Pushing ${v}"
+        docker push ${IMAGE_NAME}:${v}
+    done
+    echo "Pushing ${IMAGE_VERSIONS_ALPINE[0]}"
+    docker push ${IMAGE_NAME}:${IMAGE_VERSIONS_ALPINE[0]}
+    for v in "${IMAGE_VERSIONS_ALPINE[@]:1}"; do
+        echo "Pushing ${v}"
+        docker push ${IMAGE_NAME}:${v}
+    done
     if [ "${IS_SNAPSHOT_VERSION}" = "false" ]; then
         echo "Pushing latest"
         docker push ${IMAGE_NAME}:latest
+        echo "Pushing alpine"
+        docker push ${IMAGE_NAME}:alpine
     fi
 fi
 
