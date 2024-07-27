@@ -29,6 +29,13 @@
   <description>The extension allows to validate request and response against OpenAPI file.</description>
   <url>https://github.com/dimabarbul/wiremock-openapi-validation-extension</url>
 
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.build.outputTimestamp>2023-01-01T00:00:00Z</project.build.outputTimestamp>
+    <maven.compiler.release>11</maven.compiler.release>
+    <wiremock.version>3.9.1</wiremock.version>
+  </properties>
+
   <licenses>
     <license>
       <name>MIT License</name>
@@ -50,17 +57,11 @@
     <url>https://github.com/dimabarbul/wiremock-openapi-validation-extension</url>
   </scm>
 
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.build.outputTimestamp>2023-01-01T00:00:00Z</project.build.outputTimestamp>
-    <maven.compiler.release>11</maven.compiler.release>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>org.wiremock</groupId>
       <artifactId>wiremock</artifactId>
-      <version>3.8.0</version>
+      <version>${wiremock.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>

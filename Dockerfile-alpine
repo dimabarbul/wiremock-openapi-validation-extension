@@ -14,7 +14,5 @@
 # limitations under the License.
 #
 
-FROM wiremock/wiremock:3.8.0-1-alpine
-# Fix CVE-2024-5535
-RUN apk upgrade openssl --no-cache
+FROM wiremock/wiremock:3.9.1-1-alpine
 COPY target/wiremock-openapi-validation-extension-*.jar /var/wiremock/extensions
