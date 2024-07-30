@@ -83,13 +83,13 @@ fi
 
 if [ "${BUILD}" = "true" ]; then
     echo "Building ${IMAGE_VERSIONS[0]}"
-    docker build -t ${IMAGE_NAME}:${IMAGE_VERSIONS[0]} .
+    docker build -t ${IMAGE_NAME}:${IMAGE_VERSIONS[0]} . 2>&1
     for v in "${IMAGE_VERSIONS[@]:1}"; do
         echo "Tagging ${IMAGE_VERSIONS[0]} as ${v}"
         docker tag ${IMAGE_NAME}:${IMAGE_VERSIONS[0]} ${IMAGE_NAME}:${v}
     done
     echo "Building ${IMAGE_VERSIONS_ALPINE[0]}"
-    docker build -t ${IMAGE_NAME}:${IMAGE_VERSIONS_ALPINE[0]} -f Dockerfile-alpine .
+    docker build -t ${IMAGE_NAME}:${IMAGE_VERSIONS_ALPINE[0]} -f Dockerfile-alpine . 2>&1
     for v in "${IMAGE_VERSIONS_ALPINE[@]:1}"; do
         echo "Tagging ${IMAGE_VERSIONS_ALPINE[0]} as ${v}"
         docker tag ${IMAGE_NAME}:${IMAGE_VERSIONS_ALPINE[0]} ${IMAGE_NAME}:${v}
