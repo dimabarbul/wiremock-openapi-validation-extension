@@ -17,18 +17,16 @@ package io.github.dimabarbul.wiremock.openapi_validation;
 
 import static com.github.tomakehurst.wiremock.common.LocalNotifier.notifier;
 
-import java.io.File;
-import java.util.List;
-
 import com.github.tomakehurst.wiremock.extension.ResponseTransformerV2;
 import com.github.tomakehurst.wiremock.http.Response;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import java.io.File;
+import java.util.List;
 
 /**
- * WireMock response transformer that validates request and response against OpenAPI file.
- * It returns original response if request and response are valid, otherwise it replaces
- * response with one describing what exactly went wrong.
+ * WireMock response transformer that validates request and response against OpenAPI file. It returns original response
+ * if request and response are valid, otherwise it replaces response with one describing what exactly went wrong.
  */
 public final class ValidationResponseTransformer implements ResponseTransformerV2 {
 
@@ -44,8 +42,8 @@ public final class ValidationResponseTransformer implements ResponseTransformerV
     private final OpenApiValidator globalValidator;
 
     /**
-     * Create a new instance of {@link ValidationResponseTransformer} with options configured by
-     * environment variables and system properties.
+     * Create a new instance of {@link ValidationResponseTransformer} with options configured by environment variables
+     * and system properties.
      */
     @SuppressWarnings("unused")
     public ValidationResponseTransformer() {
@@ -61,6 +59,7 @@ public final class ValidationResponseTransformer implements ResponseTransformerV
 
     /**
      * Create a new instance of {@link ValidationResponseTransformer}.
+     *
      * @param options Options to use
      */
     public ValidationResponseTransformer(final ExtensionOptions options) {
@@ -77,10 +76,10 @@ public final class ValidationResponseTransformer implements ResponseTransformerV
         final LoggedRequest request = serveEvent.getRequest();
 
         final ValidationTransformerParameters parameters = ValidationTransformerParameters.fromServeEvent(serveEvent);
-        final ExtensionOptions mergedOptions = ExtensionOptions.builder(options)
-                .mergeWith(parameters)
-                .build();
-        final OpenApiValidator validator = globalValidator.withOptions(OpenApiValidatorOptions.fromExtensionOptions(mergedOptions));
+        final ExtensionOptions mergedOptions =
+                ExtensionOptions.builder(options).mergeWith(parameters).build();
+        final OpenApiValidator validator =
+                globalValidator.withOptions(OpenApiValidatorOptions.fromExtensionOptions(mergedOptions));
         final ValidationResult requestValidationResult = validator.validateRequest(request);
         final ValidationResult responseValidationResult = validator.validateResponse(request, response);
 
@@ -115,34 +114,25 @@ public final class ValidationResponseTransformer implements ResponseTransformerV
         }
 
         throw new RuntimeException(String.format(
-                "Cannot find OpenAPI file. Checked locations: %s",
-                String.join(", ", DEFAULT_OPENAPI_FILE_PATHS)));
+                "Cannot find OpenAPI file. Checked locations: %s", String.join(", ", DEFAULT_OPENAPI_FILE_PATHS)));
     }
 
     private static void log(final LoggedRequest request, final Response response, final Response errorResponse) {
-        notifier().error(String.format(
-                "OpenAPI validation error\n\n** Request **:\n%s\n\n** Response **:\n%s\n\n** Validation response **:\n%s",
-                prettifyForOutput(request),
-                prettifyForOutput(response),
-                prettifyForOutput(errorResponse)));
+        notifier()
+                .error(String.format(
+                        "OpenAPI validation error\n\n** Request **:\n%s\n\n** Response **:\n%s\n\n** Validation response **:\n%s",
+                        prettifyForOutput(request), prettifyForOutput(response), prettifyForOutput(errorResponse)));
     }
 
     private static String prettifyForOutput(final LoggedRequest request) {
         return String.format(
-                "URL: %s\nHeaders:\n%s\nBody: %s",
-                request.getUrl(),
-                request.getHeaders(),
-                request.getBodyAsString()
-        );
+                "URL: %s\nHeaders:\n%s\nBody: %s", request.getUrl(), request.getHeaders(), request.getBodyAsString());
     }
 
     private static String prettifyForOutput(final Response response) {
         return String.format(
                 "Status code: %d\nHeaders:\n%s\nBody: %s",
-                response.getStatus(),
-                response.getHeaders(),
-                response.getBodyAsString()
-        );
+                response.getStatus(), response.getHeaders(), response.getBodyAsString());
     }
 
     private void printConfiguration() {

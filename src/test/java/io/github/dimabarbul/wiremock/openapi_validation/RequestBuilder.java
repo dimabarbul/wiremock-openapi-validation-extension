@@ -15,14 +15,13 @@
  */
 package io.github.dimabarbul.wiremock.openapi_validation;
 
-import java.nio.charset.StandardCharsets;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.http.ImmutableRequest;
 import com.github.tomakehurst.wiremock.http.Request;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.google.common.net.MediaType;
+import java.nio.charset.StandardCharsets;
 
 class RequestBuilder {
     private static final ObjectMapper mapper = new ObjectMapper();
@@ -53,12 +52,12 @@ class RequestBuilder {
     }
 
     public static Request postJsonRequest(final String url, final String body) {
-            return ImmutableRequest.create()
-                    .withMethod(RequestMethod.POST)
-                    .withAbsoluteUrl(url)
-                    .withHeader("Content-Type", MediaType.JSON_UTF_8.toString())
-                    .withBody(body.getBytes(StandardCharsets.UTF_8))
-                    .build();
+        return ImmutableRequest.create()
+                .withMethod(RequestMethod.POST)
+                .withAbsoluteUrl(url)
+                .withHeader("Content-Type", MediaType.JSON_UTF_8.toString())
+                .withBody(body.getBytes(StandardCharsets.UTF_8))
+                .build();
     }
 
     public static Request getRequest(final String url) {

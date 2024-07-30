@@ -21,5 +21,6 @@ interface SystemAccessor {
     SystemAccessor INSTANCE = new SystemAccessorImpl();
 
     Optional<String> getEnvironmentVariable(ValidationParameter parameter);
+
     Optional<String> getSystemProperty(ValidationParameter parameter);
 }

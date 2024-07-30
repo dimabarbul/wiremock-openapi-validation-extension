@@ -32,7 +32,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.build.outputTimestamp>2023-01-01T00:00:00Z</project.build.outputTimestamp>
-    <maven.compiler.release>11</maven.compiler.release>
+    <maven.compiler.release>17</maven.compiler.release>
     <wiremock.version>3.9.1</wiremock.version>
   </properties>
 
@@ -146,7 +146,6 @@
         <version>3.3.1</version>
         <executions>
           <execution>
-            <id>attach-sources</id>
             <phase>verify</phase>
             <goals>
               <goal>jar</goal>
@@ -158,9 +157,12 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
         <version>3.7.0</version>
+        <configuration>
+          <failOnWarnings>true</failOnWarnings>
+          <doclint>all</doclint>
+        </configuration>
         <executions>
           <execution>
-            <id>attach-javadocs</id>
             <phase>verify</phase>
             <goals>
               <goal>aggregate-jar</goal>
@@ -174,7 +176,6 @@
         <version>3.2.4</version>
         <executions>
           <execution>
-            <id>sign-artifacts</id>
             <phase>verify</phase>
             <goals>
               <goal>sign</goal>
@@ -220,6 +221,14 @@
           <waitUntil>uploaded</waitUntil>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.3.0</version>
+        <configuration>
+          <classpathScope>compile</classpathScope>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 
@@ -236,20 +245,19 @@
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>exec-maven-plugin</artifactId>
-            <version>3.3.0</version>
             <configuration>
               <executable>${basedir}/build-images.sh</executable>
             </configuration>
             <executions>
               <execution>
-                <id>build docker images</id>
+                <id>build-docker-images</id>
                 <phase>verify</phase>
                 <goals>
                   <goal>exec</goal>
                 </goals>
               </execution>
               <execution>
-                <id>push docker images</id>
+                <id>push-docker-images</id>
                 <phase>deploy</phase>
                 <goals>
                   <goal>exec</goal>
@@ -276,13 +284,16 @@
       <build>
         <plugins>
           <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-checkstyle-plugin</artifactId>
-            <version>3.4.0</version>
+            <groupId>com.diffplug.spotless</groupId>
+            <artifactId>spotless-maven-plugin</artifactId>
+            <version>2.43.0</version>
             <configuration>
-              <consoleOutput>true</consoleOutput>
-              <failsOnError>true</failsOnError>
-              <linkXRef>false</linkXRef>
+              <java>
+                <palantirJavaFormat>
+                  <version>2.47.0</version>
+                  <formatJavadoc>true</formatJavadoc>
+                </palantirJavaFormat>
+              </java>
             </configuration>
             <executions>
               <execution>
@@ -306,6 +317,9 @@
                 <licenseSet>
                   <header>${basedir}/license-header.txt</header>
                   <excludes>
+                    <exclude>**/*.json</exclude>
+                    <exclude>**/*.yml</exclude>
+                    <exclude>**/*.yaml</exclude>
                     <exclude>**/README.md</exclude>
                     <exclude>**/.dockerignore</exclude>
                     <exclude>src/main/resources/**</exclude>

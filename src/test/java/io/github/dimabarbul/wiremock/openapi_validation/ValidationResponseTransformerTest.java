@@ -15,30 +15,11 @@
  */
 package io.github.dimabarbul.wiremock.openapi_validation;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.created;
-import static com.github.tomakehurst.wiremock.client.WireMock.delete;
-import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.jsonResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.noContent;
-import static com.github.tomakehurst.wiremock.client.WireMock.post;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static io.github.dimabarbul.wiremock.openapi_validation.RequestBuilder.deleteRequest;
-import static io.github.dimabarbul.wiremock.openapi_validation.RequestBuilder.getRequest;
-import static io.github.dimabarbul.wiremock.openapi_validation.RequestBuilder.postJsonRequest;
-import static io.github.dimabarbul.wiremock.openapi_validation.RequestBuilder.postRequestWithoutContentType;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.assertThatNoException;
+import static io.github.dimabarbul.wiremock.openapi_validation.RequestBuilder.*;
+import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertAll;
-
-import java.util.Optional;
-import java.util.UUID;
-
-import org.apache.http.HttpStatus;
-import org.junit.jupiter.api.Test;
 
 import com.atlassian.oai.validator.OpenApiInteractionValidator;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -50,6 +31,10 @@ import com.github.tomakehurst.wiremock.http.MultiValue;
 import com.github.tomakehurst.wiremock.http.Response;
 import com.github.tomakehurst.wiremock.matching.UrlPattern;
 import com.google.common.net.MediaType;
+import java.util.Optional;
+import java.util.UUID;
+import org.apache.http.HttpStatus;
+import org.junit.jupiter.api.Test;
 
 abstract class ValidationResponseTransformerTest {
 
@@ -76,12 +61,12 @@ abstract class ValidationResponseTransformerTest {
 
     @Test
     void testRequestBodyHasRequiredProperties() {
-        wm.stubFor(post(ADD_USER_URL)
-                .willReturn(created()));
+        wm.stubFor(post(ADD_USER_URL).willReturn(created()));
 
         Response response = server.stubRequest(postJsonRequest(
                 wm.url(ADD_USER_URL),
-                JsonNodeFactory.instance.objectNode()
+                JsonNodeFactory.instance
+                        .objectNode()
                         .put("id", UUID.randomUUID().toString())
                         .put("username", "root")
                         .put("role", "admin")));
@@ -93,8 +78,7 @@ abstract class ValidationResponseTransformerTest {
 
     @Test
     void testRequestBodyMissesRequiredProperties() {
-        wm.stubFor(post(ADD_USER_URL)
-                .willReturn(created()));
+        wm.stubFor(post(ADD_USER_URL).willReturn(created()));
 
         Response response = server.stubRequest(postJsonRequest(wm.url(ADD_USER_URL), "{}"));
 
@@ -104,12 +88,12 @@ abstract class ValidationResponseTransformerTest {
 
     @Test
     void testRequestBodyHasInvalidProperties() {
-        wm.stubFor(post(ADD_USER_URL)
-                .willReturn(created()));
+        wm.stubFor(post(ADD_USER_URL).willReturn(created()));
 
         Response response = server.stubRequest(postJsonRequest(
                 wm.url(ADD_USER_URL),
-                JsonNodeFactory.instance.objectNode()
+                JsonNodeFactory.instance
+                        .objectNode()
                         .put("id", "test")
                         .put("username", "toolongusername")
                         .put("name", "x")
@@ -120,12 +104,21 @@ abstract class ValidationResponseTransformerTest {
         assertResponseFailedBecauseOfValidation(response);
         assertAll(
                 "Request validation errors",
-                () -> assertThat(response.getBodyAsString()).contains("[Path '/id'] Input string \"test\" is not a valid UUID"),
-                () -> assertThat(response.getBodyAsString()).contains("[Path '/username'] String \"toolongusername\" is too long (length: 15, maximum allowed: 10)"),
-                () -> assertThat(response.getBodyAsString()).contains("[Path '/name'] String \"x\" is too short (length: 1, required minimum: 2)"),
-                () -> assertThat(response.getBodyAsString()).contains("[Path '/dob'] String \"invalid date string\" is invalid against requested date format(s) yyyy-MM-dd"),
-                () -> assertThat(response.getBodyAsString()).contains("[Path '/role'] Instance value (\"unknown\") not found in enum (possible values: [\"user\",\"admin\"])"),
-                () -> assertThat(response.getBodyAsString()).contains("Object instance has properties which are not allowed by the schema: [\"extra\"]"));
+                () -> assertThat(response.getBodyAsString())
+                        .contains("[Path '/id'] Input string \"test\" is not a valid UUID"),
+                () -> assertThat(response.getBodyAsString())
+                        .contains(
+                                "[Path '/username'] String \"toolongusername\" is too long (length: 15, maximum allowed: 10)"),
+                () -> assertThat(response.getBodyAsString())
+                        .contains("[Path '/name'] String \"x\" is too short (length: 1, required minimum: 2)"),
+                () -> assertThat(response.getBodyAsString())
+                        .contains(
+                                "[Path '/dob'] String \"invalid date string\" is invalid against requested date format(s) yyyy-MM-dd"),
+                () -> assertThat(response.getBodyAsString())
+                        .contains(
+                                "[Path '/role'] Instance value (\"unknown\") not found in enum (possible values: [\"user\",\"admin\"])"),
+                () -> assertThat(response.getBodyAsString())
+                        .contains("Object instance has properties which are not allowed by the schema: [\"extra\"]"));
     }
 
     @Test
@@ -143,21 +136,23 @@ abstract class ValidationResponseTransformerTest {
 
     @Test
     void testRequestMissesRequiredQueryStringParameter() {
-        wm.stubFor(delete(urlPathEqualTo(DELETE_USER_URL))
-                .willReturn(noContent()));
+        wm.stubFor(delete(urlPathEqualTo(DELETE_USER_URL)).willReturn(noContent()));
 
         Response response = server.stubRequest(deleteRequest(wm.url(DELETE_USER_URL)));
 
         assertResponseFailedBecauseOfValidation(response);
-        assertThat(response.getBodyAsString()).contains("Query parameter 'soft' is required on path '/users/{userId}' but not found in request.");
+        assertThat(response.getBodyAsString())
+                .contains("Query parameter 'soft' is required on path '/users/{userId}' but not found in request.");
     }
 
     @Test
     void testResponseHasRequiredProperties() {
         wm.stubFor(get(GET_USERS_URL)
                 .willReturn(jsonResponse(
-                        JsonNodeFactory.instance.arrayNode()
-                                .add(JsonNodeFactory.instance.objectNode()
+                        JsonNodeFactory.instance
+                                .arrayNode()
+                                .add(JsonNodeFactory.instance
+                                        .objectNode()
                                         .put("id", UUID.randomUUID().toString())
                                         .put("username", "root")
                                         .put("role", "admin")),
@@ -172,8 +167,7 @@ abstract class ValidationResponseTransformerTest {
 
     @Test
     void testResponseMissesRequiredProperties() {
-        wm.stubFor(get(GET_USERS_URL)
-                .willReturn(jsonResponse("[{}]", HttpStatus.SC_OK)));
+        wm.stubFor(get(GET_USERS_URL).willReturn(jsonResponse("[{}]", HttpStatus.SC_OK)));
 
         Response response = server.stubRequest(getRequest(wm.url(GET_USERS_URL)));
 
@@ -185,8 +179,10 @@ abstract class ValidationResponseTransformerTest {
     void testResponseHasInvalidProperties() {
         wm.stubFor(get(GET_USERS_URL)
                 .willReturn(jsonResponse(
-                        JsonNodeFactory.instance.arrayNode()
-                                .add(JsonNodeFactory.instance.objectNode()
+                        JsonNodeFactory.instance
+                                .arrayNode()
+                                .add(JsonNodeFactory.instance
+                                        .objectNode()
                                         .put("id", "test")
                                         .put("username", "toolongusername")
                                         .put("name", "x")
@@ -199,40 +195,47 @@ abstract class ValidationResponseTransformerTest {
         assertResponseFailedBecauseOfValidation(response);
         assertAll(
                 "Response validation errors",
-                () -> assertThat(response.getBodyAsString()).contains("[Path '/0/id'] Input string \"test\" is not a valid UUID"),
-                () -> assertThat(response.getBodyAsString()).contains("[Path '/0/username'] String \"toolongusername\" is too long (length: 15, maximum allowed: 10)"),
-                () -> assertThat(response.getBodyAsString()).contains("[Path '/0/name'] String \"x\" is too short (length: 1, required minimum: 2)"),
-                () -> assertThat(response.getBodyAsString()).contains("[Path '/0/dob'] String \"invalid date string\" is invalid against requested date format(s) yyyy-MM-dd"),
-                () -> assertThat(response.getBodyAsString()).contains("[Path '/0/role'] Instance value (\"unknown\") not found in enum (possible values: [\"user\",\"admin\"])"));
+                () -> assertThat(response.getBodyAsString())
+                        .contains("[Path '/0/id'] Input string \"test\" is not a valid UUID"),
+                () -> assertThat(response.getBodyAsString())
+                        .contains(
+                                "[Path '/0/username'] String \"toolongusername\" is too long (length: 15, maximum allowed: 10)"),
+                () -> assertThat(response.getBodyAsString())
+                        .contains("[Path '/0/name'] String \"x\" is too short (length: 1, required minimum: 2)"),
+                () -> assertThat(response.getBodyAsString())
+                        .contains(
+                                "[Path '/0/dob'] String \"invalid date string\" is invalid against requested date format(s) yyyy-MM-dd"),
+                () -> assertThat(response.getBodyAsString())
+                        .contains(
+                                "[Path '/0/role'] Instance value (\"unknown\") not found in enum (possible values: [\"user\",\"admin\"])"));
     }
 
     @Test
     void testResponseHasInvalidStatusCode() {
-        wm.stubFor(get(GET_USERS_URL)
-                .willReturn(jsonResponse("", HttpStatus.SC_NOT_FOUND)));
+        wm.stubFor(get(GET_USERS_URL).willReturn(jsonResponse("", HttpStatus.SC_NOT_FOUND)));
 
         Response response = server.stubRequest(getRequest(wm.url(GET_USERS_URL)));
 
         assertResponseFailedBecauseOfValidation(response);
-        assertThat(response.getBodyAsString()).contains("Response status 404 not defined for path '" + GET_USERS_URL + "'.");
+        assertThat(response.getBodyAsString())
+                .contains("Response status 404 not defined for path '" + GET_USERS_URL + "'.");
     }
 
     @Test
     void testUnknownPath() {
-        wm.stubFor(get(UrlPattern.ANY)
-                .willReturn(noContent()));
+        wm.stubFor(get(UrlPattern.ANY).willReturn(noContent()));
 
         String unknownPath = "/unknown";
         Response response = server.stubRequest(getRequest(wm.url(unknownPath)));
 
         assertResponseFailedBecauseOfValidation(response);
-        assertThat(response.getBodyAsString()).contains("No API path found that matches request '" + unknownPath + "'.");
+        assertThat(response.getBodyAsString())
+                .contains("No API path found that matches request '" + unknownPath + "'.");
     }
 
     @Test
     void testUnmatchedResponse() {
-        wm.stubFor(get("/test")
-                .willReturn(noContent()));
+        wm.stubFor(get("/test").willReturn(noContent()));
 
         Response response = server.stubRequest(getRequest(wm.url("/not-test")));
 
@@ -241,11 +244,10 @@ abstract class ValidationResponseTransformerTest {
 
     @Test
     void testGlobalCustomResponseCodeOnValidationFailure() {
-        WireMockServer wm = new WireMockServer(getWireMockConfiguration(ExtensionOptions.builder()
-                .withFailureStatusCode(599)));
+        WireMockServer wm = new WireMockServer(
+                getWireMockConfiguration(ExtensionOptions.builder().withFailureStatusCode(599)));
 
-        wm.stubFor(get(UrlPattern.ANY)
-                .willReturn(noContent()));
+        wm.stubFor(get(UrlPattern.ANY).willReturn(noContent()));
 
         DirectCallHttpServer server = factory.getHttpServer();
 
@@ -258,8 +260,7 @@ abstract class ValidationResponseTransformerTest {
     void testCustomResponseCodeOnValidationFailure() {
         int statusCode = 598;
         wm.stubFor(get(UrlPattern.ANY)
-                .willReturn(noContent()
-                        .withTransformerParameter("openapiValidationFailureStatusCode", statusCode)));
+                .willReturn(noContent().withTransformerParameter("openapiValidationFailureStatusCode", statusCode)));
 
         Response response = server.stubRequest(getRequest(wm.url("/test")));
 
@@ -269,9 +270,8 @@ abstract class ValidationResponseTransformerTest {
     @Test
     void testInvalidOpenapiFileThrowsException() {
         assertThatExceptionOfType(OpenApiInteractionValidator.ApiLoadException.class)
-                .isThrownBy(() ->
-                        new WireMockServer(getWireMockConfiguration(ExtensionOptions.builder()
-                                .withOpenapiFilePath(INVALID_OPENAPI_FILE_PATH))));
+                .isThrownBy(() -> new WireMockServer(getWireMockConfiguration(
+                        ExtensionOptions.builder().withOpenapiFilePath(INVALID_OPENAPI_FILE_PATH))));
     }
 
     @Test
@@ -284,12 +284,11 @@ abstract class ValidationResponseTransformerTest {
 
     @Test
     void testRequestBodyMissesRequiredPropertiesWhenUsingYamlOpenapiFile() {
-        WireMockServer wm = new WireMockServer(getWireMockConfiguration(ExtensionOptions.builder()
-                .withOpenapiFilePath(YAML_OPENAPI_FILE_PATH)));
+        WireMockServer wm = new WireMockServer(
+                getWireMockConfiguration(ExtensionOptions.builder().withOpenapiFilePath(YAML_OPENAPI_FILE_PATH)));
         DirectCallHttpServer server = factory.getHttpServer();
 
-        wm.stubFor(post(ADD_USER_URL)
-                .willReturn(created()));
+        wm.stubFor(post(ADD_USER_URL).willReturn(created()));
 
         Response response = server.stubRequest(postJsonRequest(wm.url(ADD_USER_URL), "{}"));
 
@@ -299,12 +298,12 @@ abstract class ValidationResponseTransformerTest {
 
     @Test
     void testRequestWithoutContentTypeThrowsException() {
-        wm.stubFor(post(ADD_USER_URL)
-                .willReturn(created()));
+        wm.stubFor(post(ADD_USER_URL).willReturn(created()));
 
         Response response = server.stubRequest(postRequestWithoutContentType(
                 wm.url(ADD_USER_URL),
-                JsonNodeFactory.instance.objectNode()
+                JsonNodeFactory.instance
+                        .objectNode()
                         .put("id", UUID.randomUUID().toString())
                         .put("username", "root")
                         .put("role", "admin")));
@@ -318,13 +317,14 @@ abstract class ValidationResponseTransformerTest {
         wm.stubFor(get(GET_USERS_URL)
                 .willReturn(aResponse()
                         .withStatus(200)
-                        .withBody(
-                                JsonNodeFactory.instance.arrayNode()
-                                        .add(JsonNodeFactory.instance.objectNode()
-                                                .put("id", UUID.randomUUID().toString())
-                                                .put("username", "root")
-                                                .put("role", "admin"))
-                                        .toString())));
+                        .withBody(JsonNodeFactory.instance
+                                .arrayNode()
+                                .add(JsonNodeFactory.instance
+                                        .objectNode()
+                                        .put("id", UUID.randomUUID().toString())
+                                        .put("username", "root")
+                                        .put("role", "admin"))
+                                .toString())));
 
         Response response = server.stubRequest(getRequest(wm.url(GET_USERS_URL)));
 
@@ -339,9 +339,9 @@ abstract class ValidationResponseTransformerTest {
     protected WireMockConfiguration getWireMockConfiguration(final ExtensionOptions.Builder builder) {
         return wireMockConfig()
                 .httpServerFactory(factory)
-                .extensions(new ValidationResponseTransformer(builder
-                        .withValidatorName(validatorName)
-                        .withOpenapiFilePath(Optional.ofNullable(builder.getOpenapiFilePath()).orElse(JSON_OPENAPI_FILE_PATH))
+                .extensions(new ValidationResponseTransformer(builder.withValidatorName(validatorName)
+                        .withOpenapiFilePath(Optional.ofNullable(builder.getOpenapiFilePath())
+                                .orElse(JSON_OPENAPI_FILE_PATH))
                         .build()));
     }
 

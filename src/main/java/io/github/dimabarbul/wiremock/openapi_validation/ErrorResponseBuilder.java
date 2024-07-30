@@ -15,21 +15,20 @@
  */
 package io.github.dimabarbul.wiremock.openapi_validation;
 
-import java.util.stream.Collectors;
-
 import com.github.tomakehurst.wiremock.http.HttpHeader;
 import com.github.tomakehurst.wiremock.http.HttpHeaders;
 import com.github.tomakehurst.wiremock.http.Response;
 import com.google.common.net.MediaType;
+import java.util.stream.Collectors;
 
 final class ErrorResponseBuilder {
 
-    private ErrorResponseBuilder() {
-    }
+    private ErrorResponseBuilder() {}
 
-    public static Response buildResponse(final int statusCode,
-                                         final ValidationResult requestValidationResult,
-                                         final ValidationResult responseValidationResult) {
+    public static Response buildResponse(
+            final int statusCode,
+            final ValidationResult requestValidationResult,
+            final ValidationResult responseValidationResult) {
         return Response.response()
                 .status(statusCode)
                 .headers(new HttpHeaders(new HttpHeader("Content-Type", MediaType.HTML_UTF_8.toString())))
@@ -37,8 +36,8 @@ final class ErrorResponseBuilder {
                 .build();
     }
 
-    private static String buildBody(final ValidationResult requestValidationResult,
-                                    final ValidationResult responseValidationResult) {
+    private static String buildBody(
+            final ValidationResult requestValidationResult, final ValidationResult responseValidationResult) {
         return "<h1>Validation against OpenAPI failed</h1>\n"
                 + "<h2>Request Errors</h2>\n"
                 + getErrorsHtml(requestValidationResult)
@@ -49,7 +48,8 @@ final class ErrorResponseBuilder {
     private static String getErrorsHtml(final ValidationResult validationResult) {
         return validationResult.hasErrors()
                 ? "<ul>\n"
-                        + validationResult.getErrors().stream().map(m -> "\t<li>" + getErrorHtml(m) + "</li>\n")
+                        + validationResult.getErrors().stream()
+                                .map(m -> "\t<li>" + getErrorHtml(m) + "</li>\n")
                                 .collect(Collectors.joining())
                         + "</ul>\n"
                 : "<b>No errors</b>\n";

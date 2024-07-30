@@ -23,19 +23,18 @@ final class ValidationParameter {
 
     public static final ValidationParameter PRINT_CONFIG = new ValidationParameter("openapi_validation_print_config");
     public static final ValidationParameter OPENAPI_FILE_PATH = new ValidationParameter("openapi_validation_file_path");
-    public static final ValidationParameter ALLOW_INVALID_OPENAPI = new ValidationParameter("openapi_validation_allow_invalid_openapi");
-    public static final ValidationParameter VALIDATOR_NAME = new ValidationParameter("openapi_validation_validator_name");
-    public static final ValidationParameter FAILURE_STATUS_CODE = new ValidationParameter("openapi_validation_failure_status_code");
+    public static final ValidationParameter ALLOW_INVALID_OPENAPI =
+            new ValidationParameter("openapi_validation_allow_invalid_openapi");
+    public static final ValidationParameter VALIDATOR_NAME =
+            new ValidationParameter("openapi_validation_validator_name");
+    public static final ValidationParameter FAILURE_STATUS_CODE =
+            new ValidationParameter("openapi_validation_failure_status_code");
     public static final ValidationParameter IGNORE_ERRORS = new ValidationParameter("openapi_validation_ignore_errors");
 
-    /**
-     * Name in lower_snake_case format.
-     */
+    /** Name in lower_snake_case format. */
     private final String name;
 
-    /**
-     * @param name Name of parameter in lower_snake_case or in UPPER_SNAKE_CASE.
-     */
+    /** @param name Name of parameter in lower_snake_case or in UPPER_SNAKE_CASE. */
     private ValidationParameter(final String name) {
         requireNonNull(name);
         this.name = CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_UNDERSCORE, name);

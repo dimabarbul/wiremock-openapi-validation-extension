@@ -18,31 +18,26 @@ package io.github.dimabarbul.wiremock.openapi_validation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
 import org.junit.jupiter.api.Test;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 
 class ExtensionOptionsTest {
 
     @Test
     public void testFromSystemParametersNothingIsSet() {
-        final SystemAccessor systemAccessor = new TestSystemAccessor.Builder()
-                .build();
+        final SystemAccessor systemAccessor = new TestSystemAccessor.Builder().build();
 
-        ExtensionOptions options = ExtensionOptions
-                .fromSystemParameters(systemAccessor);
+        ExtensionOptions options = ExtensionOptions.fromSystemParameters(systemAccessor);
 
         assertThat(options).isNotNull();
-        assertAll("correct default parameters",
+        assertAll(
+                "correct default parameters",
                 () -> assertThat(options.shouldPrintConfiguration()).isFalse(),
                 () -> assertThat(options.getOpenapiFilePath()).isNull(),
                 () -> assertThat(options.isInvalidOpenapiAllowed()).isFalse(),
@@ -62,11 +57,11 @@ class ExtensionOptionsTest {
                 .addSystemProperties("openapi_validation_validator_name", "validator")
                 .build();
 
-        ExtensionOptions options = ExtensionOptions
-                .fromSystemParameters(systemAccessor);
+        ExtensionOptions options = ExtensionOptions.fromSystemParameters(systemAccessor);
 
         assertThat(options).isNotNull();
-        assertAll("correct filled parameters",
+        assertAll(
+                "correct filled parameters",
                 () -> assertThat(options.shouldPrintConfiguration()).isTrue(),
                 () -> assertThat(options.getOpenapiFilePath()).isEqualTo("test"),
                 () -> assertThat(options.isInvalidOpenapiAllowed()).isTrue(),
@@ -86,11 +81,11 @@ class ExtensionOptionsTest {
                 .addEnvironmentVariables("OPENAPI_VALIDATION_VALIDATOR_NAME", "validator")
                 .build();
 
-        ExtensionOptions options = ExtensionOptions
-                .fromSystemParameters(systemAccessor);
+        ExtensionOptions options = ExtensionOptions.fromSystemParameters(systemAccessor);
 
         assertThat(options).isNotNull();
-        assertAll("correct filled parameters",
+        assertAll(
+                "correct filled parameters",
                 () -> assertThat(options.shouldPrintConfiguration()).isTrue(),
                 () -> assertThat(options.getOpenapiFilePath()).isEqualTo("test"),
                 () -> assertThat(options.isInvalidOpenapiAllowed()).isTrue(),
@@ -100,8 +95,7 @@ class ExtensionOptionsTest {
     }
 
     @Test
-    void testMergeWithEmptyServeEvent()
-            throws JsonProcessingException {
+    void testMergeWithEmptyServeEvent() throws JsonProcessingException {
         final ExtensionOptions originalOptions = ExtensionOptions.builder()
                 .withConfigurationPrinted(true)
                 .withOpenapiFilePath("filePath")
@@ -110,25 +104,27 @@ class ExtensionOptionsTest {
                 .withFailureStatusCode(123)
                 .withIgnoredErrors(List.of("error1", "error2"))
                 .build();
-        final ValidationTransformerParameters parameters = ValidationTransformerParameters.fromServeEvent(
-                new ObjectMapper().readValue("{}", ServeEvent.class));
+        final ValidationTransformerParameters parameters =
+                ValidationTransformerParameters.fromServeEvent(new ObjectMapper().readValue("{}", ServeEvent.class));
 
-        final ExtensionOptions mergedOptions = ExtensionOptions.builder(originalOptions)
-                .mergeWith(parameters)
-                .build();
+        final ExtensionOptions mergedOptions =
+                ExtensionOptions.builder(originalOptions).mergeWith(parameters).build();
 
-        assertAll("merged options are correct",
-                () -> assertThat(mergedOptions.shouldPrintConfiguration()).isEqualTo(originalOptions.shouldPrintConfiguration()),
+        assertAll(
+                "merged options are correct",
+                () -> assertThat(mergedOptions.shouldPrintConfiguration())
+                        .isEqualTo(originalOptions.shouldPrintConfiguration()),
                 () -> assertThat(mergedOptions.getOpenapiFilePath()).isEqualTo(originalOptions.getOpenapiFilePath()),
                 () -> assertThat(mergedOptions.getIgnoredErrors()).isSameAs(originalOptions.getIgnoredErrors()),
                 () -> assertThat(mergedOptions.getValidatorName()).isEqualTo(originalOptions.getValidatorName()),
-                () -> assertThat(mergedOptions.isInvalidOpenapiAllowed()).isEqualTo(originalOptions.isInvalidOpenapiAllowed()),
-                () -> assertThat(mergedOptions.getFailureStatusCode()).isEqualTo(originalOptions.getFailureStatusCode()));
+                () -> assertThat(mergedOptions.isInvalidOpenapiAllowed())
+                        .isEqualTo(originalOptions.isInvalidOpenapiAllowed()),
+                () -> assertThat(mergedOptions.getFailureStatusCode())
+                        .isEqualTo(originalOptions.getFailureStatusCode()));
     }
 
     @Test
-    void testMergeWithFilledServeEvent()
-            throws JsonProcessingException {
+    void testMergeWithFilledServeEvent() throws JsonProcessingException {
         final ExtensionOptions originalOptions = ExtensionOptions.builder()
                 .withConfigurationPrinted(true)
                 .withOpenapiFilePath("filePath")
@@ -137,43 +133,49 @@ class ExtensionOptionsTest {
                 .withFailureStatusCode(123)
                 .withIgnoredErrors(List.of("error1", "error2", "error3"))
                 .build();
-        final JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
-        final String json = jsonFactory.objectNode()
-                .set("mapping", jsonFactory.objectNode()
-                        .set("response", jsonFactory.objectNode()
-                                .set("transformerParameters", jsonFactory.objectNode()
-                                        .setAll(Map.<String, JsonNode>of(
-                                                "openapiValidationOpenapiPrintConfig", jsonFactory.booleanNode(false),
-                                                "openapiValidationOpenapiFilePath", jsonFactory.textNode("anotherFile"),
-                                                "openapiValidationOpenapiIgnoreOpenapiErrors", jsonFactory.booleanNode(false),
-                                                "openapiValidationOpenapiValidatorName", jsonFactory.textNode("anotherValidator"),
-                                                "openapiValidationFailureStatusCode", jsonFactory.numberNode(418),
-                                                "openapiValidationIgnoreErrors", jsonFactory.objectNode()
-                                                        .setAll(Map.<String, JsonNode>of(
-                                                                "error1", jsonFactory.booleanNode(true),
-                                                                "error2", jsonFactory.booleanNode(false),
-                                                                "error4", jsonFactory.booleanNode(true),
-                                                                "error5", jsonFactory.booleanNode(false))))))))
-                .toString();
+        final String json =
+                """
+                {
+                    "mapping": {
+                        "response": {
+                            "transformerParameters": {
+                                "openapiValidationOpenapiPrintConfig": false,
+                                "openapiValidationOpenapiFilePath": "anotherFile",
+                                "openapiValidationOpenapiIgnoreOpenapiErrors": false,
+                                "openapiValidationOpenapiValidatorName": "anotherValidator",
+                                "openapiValidationFailureStatusCode": 418,
+                                "openapiValidationIgnoreErrors": {
+                                    "error1": true,
+                                    "error2": false,
+                                    "error4": true,
+                                    "error5": false
+                                }
+                            }
+                        }
+                    }
+                }
+                """;
         final ServeEvent serveEvent = new ObjectMapper().readValue(json, ServeEvent.class);
         final ValidationTransformerParameters parameters = ValidationTransformerParameters.fromServeEvent(serveEvent);
 
-        final ExtensionOptions mergedOptions = ExtensionOptions.builder(originalOptions)
-                .mergeWith(parameters)
-                .build();
+        final ExtensionOptions mergedOptions =
+                ExtensionOptions.builder(originalOptions).mergeWith(parameters).build();
 
-        assertAll("merged options are correct",
-                () -> assertThat(mergedOptions.shouldPrintConfiguration()).isEqualTo(originalOptions.shouldPrintConfiguration()),
+        assertAll(
+                "merged options are correct",
+                () -> assertThat(mergedOptions.shouldPrintConfiguration())
+                        .isEqualTo(originalOptions.shouldPrintConfiguration()),
                 () -> assertThat(mergedOptions.getOpenapiFilePath()).isEqualTo(originalOptions.getOpenapiFilePath()),
-                () -> assertThat(mergedOptions.isInvalidOpenapiAllowed()).isEqualTo(originalOptions.isInvalidOpenapiAllowed()),
+                () -> assertThat(mergedOptions.isInvalidOpenapiAllowed())
+                        .isEqualTo(originalOptions.isInvalidOpenapiAllowed()),
                 () -> assertThat(mergedOptions.getValidatorName()).isEqualTo(originalOptions.getValidatorName()),
                 () -> assertThat(mergedOptions.getFailureStatusCode()).isEqualTo(parameters.getFailureStatusCode()),
-                () -> assertThat(mergedOptions.getIgnoredErrors()).containsExactlyInAnyOrder("error1", "error3", "error4"));
+                () -> assertThat(mergedOptions.getIgnoredErrors())
+                        .containsExactlyInAnyOrder("error1", "error3", "error4"));
     }
 
     @Test
-    void testMergeWithPartiallyFilledServeEvent()
-            throws JsonProcessingException {
+    void testMergeWithPartiallyFilledServeEvent() throws JsonProcessingException {
         final ExtensionOptions originalOptions = ExtensionOptions.builder()
                 .withConfigurationPrinted(true)
                 .withOpenapiFilePath("filePath")
@@ -182,27 +184,33 @@ class ExtensionOptionsTest {
                 .withFailureStatusCode(123)
                 .withIgnoredErrors(List.of("error1", "error2", "error3"))
                 .build();
-        final JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
-        final String json = jsonFactory.objectNode()
-                .set("mapping", jsonFactory.objectNode()
-                        .set("response", jsonFactory.objectNode()
-                                .set("transformerParameters", jsonFactory.objectNode()
-                                        .setAll(Map.<String, JsonNode>of(
-                                                "openapiValidationFailureStatusCode", jsonFactory.numberNode(418))))))
-                .toString();
+        final String json =
+                """
+                {
+                    "mapping": {
+                        "response": {
+                            "transformerParameters": {
+                                "openapiValidationFailureStatusCode": 418
+                            }
+                        }
+                    }
+                }
+                """;
         final ServeEvent serveEvent = new ObjectMapper().readValue(json, ServeEvent.class);
         final ValidationTransformerParameters parameters = ValidationTransformerParameters.fromServeEvent(serveEvent);
 
-        final ExtensionOptions mergedOptions = ExtensionOptions.builder(originalOptions)
-                .mergeWith(parameters)
-                .build();
+        final ExtensionOptions mergedOptions =
+                ExtensionOptions.builder(originalOptions).mergeWith(parameters).build();
 
-        assertAll("merged options are correct",
-                () -> assertThat(mergedOptions.shouldPrintConfiguration()).isEqualTo(originalOptions.shouldPrintConfiguration()),
+        assertAll(
+                "merged options are correct",
+                () -> assertThat(mergedOptions.shouldPrintConfiguration())
+                        .isEqualTo(originalOptions.shouldPrintConfiguration()),
                 () -> assertThat(mergedOptions.getOpenapiFilePath()).isEqualTo(originalOptions.getOpenapiFilePath()),
                 () -> assertThat(mergedOptions.getIgnoredErrors()).isSameAs(originalOptions.getIgnoredErrors()),
                 () -> assertThat(mergedOptions.getValidatorName()).isEqualTo(originalOptions.getValidatorName()),
-                () -> assertThat(mergedOptions.isInvalidOpenapiAllowed()).isEqualTo(originalOptions.isInvalidOpenapiAllowed()),
+                () -> assertThat(mergedOptions.isInvalidOpenapiAllowed())
+                        .isEqualTo(originalOptions.isInvalidOpenapiAllowed()),
                 () -> assertThat(mergedOptions.getFailureStatusCode()).isEqualTo(parameters.getFailureStatusCode()));
     }
 
@@ -210,8 +218,8 @@ class ExtensionOptionsTest {
         private final Map<String, String> environmentVariables;
         private final Map<String, String> systemProperties;
 
-        public TestSystemAccessor(final Map<String, String> environmentVariables,
-                                  final Map<String, String> systemProperties) {
+        public TestSystemAccessor(
+                final Map<String, String> environmentVariables, final Map<String, String> systemProperties) {
             this.environmentVariables = environmentVariables;
             this.systemProperties = systemProperties;
         }

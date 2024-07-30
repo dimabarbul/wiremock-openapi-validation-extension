@@ -15,10 +15,9 @@
  */
 package io.github.dimabarbul.wiremock.openapi_validation;
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
-
-import com.google.common.collect.ImmutableList;
 
 class ValidationResult {
 

@@ -17,12 +17,11 @@ package io.github.dimabarbul.wiremock.openapi_validation;
 
 import static java.util.Objects.requireNonNull;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import com.github.tomakehurst.wiremock.common.Metadata;
 import com.github.tomakehurst.wiremock.extension.Parameters;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
+import java.util.HashMap;
+import java.util.Map;
 
 final class ValidationTransformerParameters {
 
@@ -44,10 +43,10 @@ final class ValidationTransformerParameters {
 
     public static ValidationTransformerParameters fromServeEvent(final ServeEvent serveEvent) {
         final Parameters transformerParameters = serveEvent.getTransformerParameters();
-        final Integer failureStatusCode = transformerParameters.getInt(
-                ValidationParameter.FAILURE_STATUS_CODE.transformerParameterName(), null);
-        final Metadata ignoreErrorsMetadata = transformerParameters.getMetadata(
-                ValidationParameter.IGNORE_ERRORS.transformerParameterName(), null);
+        final Integer failureStatusCode =
+                transformerParameters.getInt(ValidationParameter.FAILURE_STATUS_CODE.transformerParameterName(), null);
+        final Metadata ignoreErrorsMetadata =
+                transformerParameters.getMetadata(ValidationParameter.IGNORE_ERRORS.transformerParameterName(), null);
         final Map<String, Boolean> ignoredErrors;
         if (ignoreErrorsMetadata != null) {
             ignoredErrors = new HashMap<>(ignoreErrorsMetadata.size());
@@ -60,5 +59,4 @@ final class ValidationTransformerParameters {
 
         return new ValidationTransformerParameters(failureStatusCode, ignoredErrors);
     }
-
 }
