@@ -54,3 +54,11 @@ buildNumber.properties
 # IDEA
 ######################
 .idea
+
+
+######################
+# CUSTOM
+######################
+/openapi.*
+/mappings
+/__files
