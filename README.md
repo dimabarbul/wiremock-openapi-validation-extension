@@ -88,6 +88,7 @@ mvn exec:java \
   -Dexec.mainClass=wiremock.Run \
   -Dexec.classpathScope="compile" \
   -Dopenapi_validation_file_path=https://petstore3.swagger.io/api/v3/openapi.json
+  -Dexec.args='--verbose'
 ```
 
 ## Configuration
@@ -259,6 +260,6 @@ Override parameters on per-stub level:
 }
 ```
 
-## Contributing
+## Working with Source
 
-See [Contributing.md](./CONTRIBUTING.md).
+For information on how to build, run and so on from source, refer to [BUILDING.md](./BUILDING.md).
