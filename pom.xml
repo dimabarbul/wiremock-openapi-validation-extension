@@ -34,6 +34,7 @@
     <project.build.outputTimestamp>2023-01-01T00:00:00Z</project.build.outputTimestamp>
     <maven.compiler.release>17</maven.compiler.release>
     <wiremock.version>3.9.1</wiremock.version>
+    <developer.connection>scm:git:https://github.com/dimabarbul/wiremock-openapi-validation-extension.git</developer.connection>
   </properties>
 
   <licenses>
@@ -53,7 +54,7 @@
 
   <scm>
     <connection>scm:git:https://github.com/dimabarbul/wiremock-openapi-validation-extension.git</connection>
-    <developerConnection>scm:git:https://github.com/dimabarbul/wiremock-openapi-validation-extension.git</developerConnection>
+    <developerConnection>${developer.connection}</developerConnection>
     <url>https://github.com/dimabarbul/wiremock-openapi-validation-extension</url>
   </scm>
 
