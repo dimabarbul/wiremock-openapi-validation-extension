@@ -39,8 +39,10 @@ function expand_versions
     echo "${result[@]}"
 }
 
-echo "Calculating project version"
-PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+if [ -z "${PROJECT_VERSION}" ]; then
+    echo "Calculating project version"
+    PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+fi
 IMAGE_NAME=dimabarbul/wiremock-openapi-validation
 IMAGE_VERSION=$(tr '[:upper:]' '[:lower:]' <<<${PROJECT_VERSION})
 if [ -z "${PUSH}" ]; then

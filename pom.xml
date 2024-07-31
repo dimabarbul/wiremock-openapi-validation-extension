@@ -248,6 +248,9 @@
             <artifactId>exec-maven-plugin</artifactId>
             <configuration>
               <executable>${basedir}/build-images.sh</executable>
+              <environmentVariables>
+                <PROJECT_VERSION>${project.version}</PROJECT_VERSION>
+              </environmentVariables>
             </configuration>
             <executions>
               <execution>

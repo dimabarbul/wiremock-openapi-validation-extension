@@ -24,6 +24,19 @@ mvn clean package
 
 ## Create Docker Images
 
+Docker images will have tags based on project version. For example, for version x.y.z images will have following tags:
+
+- for version ending with `-SNAPSHOT`:
+  - x.y.z-snapshot
+  - x.y.z-snapshot-alpine
+- for version not ending with `-SNAPSHOT`:
+  - x.y.z
+  - x.y
+  - latest
+  - x.y.z-alpine
+  - x.y-alpine
+  - alpine
+
 To build docker images there are 2 options: after generating jar file run `build-images.sh` or run Maven phase `verify`:
 
 ```bash
@@ -40,10 +53,11 @@ mvn clean verify -Dgpg.skip
 
 `build-images.sh` script uses following environment variables.
 
-| Environment Variable | Description                                    |
-|----------------------|------------------------------------------------|
-| PUSH                 | If not empty, docker images will be pushed.    |
-| NOBUILD              | If not empty, docker images will NOT be built. |
+| Environment Variable | Description                                                                        |
+|----------------------|------------------------------------------------------------------------------------|
+| PUSH                 | If not empty, docker images will be pushed.                                        |
+| NOBUILD              | If not empty, docker images will NOT be built.                                     |
+| PROJECT_VERSION      | If not empty, its value will be used, otherwise it will be calculated using Maven. |
 
 ## Deploy
 
