@@ -137,8 +137,6 @@ File path of OpenAPI file to use. File can be in JSON or YAML format. It can be 
 - /home/wiremock/openapi.yaml
 - /home/wiremock/openapi.yml
 
-OpenAPI file that is used by the extension is written to stdout.
-
 If file cannot be found, an exception is thrown, so the application won't start.
 
 ### Allow Invalid OpenAPI File
