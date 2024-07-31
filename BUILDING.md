@@ -89,9 +89,9 @@ Check [documentation](https://central.sonatype.org/publish/publish-portal-maven/
 
 ## Release
 
-The project uses [release plugin](https://maven.apache.org/maven-release/maven-release-plugin/) for performing release. Apart from changes in source control management, release pushes docker images using `docker push` and uploads build artifact to sonatype.org.
+The project uses [release plugin](https://maven.apache.org/maven-release/maven-release-plugin/) for performing release. Apart from changes in source control management, release pushes docker images using `docker push` and uploads build artifact to Sonatype.
 
-Note 1: release does not wait for artifact to be validated, only to be uploaded. Note 2: artifact pushed to sonatype.org is not published, publishing is left to be done manually.
+Note 1: release does not wait for artifact to be validated, only to be uploaded. Note 2: artifact pushed to Sonatype is not published, publishing is left to be done manually.
 
 To make a release, run following commands:
 
@@ -134,6 +134,13 @@ If you don't want to push docker images, you can add argument `-DskipDocker` to 
 mvn -B -Dstyle.color=always release:prepare -Darguments='-DskipDocker'
 mvn -B -Dstyle.color=always release:perform -Darguments='-DskipDocker'
 ```
+
+### Manual Steps
+
+After release there is a couple of manual steps:
+
+- publish artifact on Sonatype to make it available through Maven central repository
+- update repository description on hub.docker.com (can just copy [Docker.md](./Docker.md))
 
 ### Troubleshooting
 
