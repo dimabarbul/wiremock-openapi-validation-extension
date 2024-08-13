@@ -4,7 +4,7 @@ The document describes how to build, run, debug the project and so on.
 
 ## Build and Package
 
-To build the project you need Maven 3.8+ and JDK 17 installed. To build project just run:
+To build the project you need Maven 3.8+ and JDK 11 installed. To build project just run:
 
 ```bash
 mvn clean compile

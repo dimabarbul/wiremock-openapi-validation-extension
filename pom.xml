@@ -31,7 +31,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.build.outputTimestamp>2024-07-31T10:50:01Z</project.build.outputTimestamp>
-    <maven.compiler.release>17</maven.compiler.release>
+    <maven.compiler.release>11</maven.compiler.release>
     <wiremock.version>3.9.1</wiremock.version>
     <developer.connection>scm:git:https://github.com/dimabarbul/wiremock-openapi-validation-extension.git</developer.connection>
   </properties>

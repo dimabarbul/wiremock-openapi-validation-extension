@@ -37,22 +37,19 @@ class ValidationTransformerParametersTest {
 
     @Test
     void testFromServeEventWhenEverythingIsSet() throws JsonProcessingException {
-        final String json =
-                """
-                {
-                    "mapping": {
-                        "response": {
-                            "transformerParameters": {
-                                "openapiValidationFailureStatusCode": 418,
-                                "openapiValidationIgnoreErrors": {
-                                    "error1": true,
-                                    "error2": false
-                                }
-                            }
-                        }
-                    }
-                }
-                """;
+        final String json = "{"
+                + "    \"mapping\": {"
+                + "        \"response\": {"
+                + "            \"transformerParameters\": {"
+                + "                \"openapiValidationFailureStatusCode\": 418,"
+                + "                \"openapiValidationIgnoreErrors\": {"
+                + "                    \"error1\": true,"
+                + "                    \"error2\": false"
+                + "                }"
+                + "            }"
+                + "        }"
+                + "    }"
+                + "}";
         final ServeEvent serveEvent = new ObjectMapper().readValue(json, ServeEvent.class);
 
         final ValidationTransformerParameters parameters = ValidationTransformerParameters.fromServeEvent(serveEvent);

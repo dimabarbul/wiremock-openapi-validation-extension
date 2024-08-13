@@ -133,28 +133,25 @@ class ExtensionOptionsTest {
                 .withFailureStatusCode(123)
                 .withIgnoredErrors(List.of("error1", "error2", "error3"))
                 .build();
-        final String json =
-                """
-                {
-                    "mapping": {
-                        "response": {
-                            "transformerParameters": {
-                                "openapiValidationOpenapiPrintConfig": false,
-                                "openapiValidationOpenapiFilePath": "anotherFile",
-                                "openapiValidationOpenapiIgnoreOpenapiErrors": false,
-                                "openapiValidationOpenapiValidatorName": "anotherValidator",
-                                "openapiValidationFailureStatusCode": 418,
-                                "openapiValidationIgnoreErrors": {
-                                    "error1": true,
-                                    "error2": false,
-                                    "error4": true,
-                                    "error5": false
-                                }
-                            }
-                        }
-                    }
-                }
-                """;
+        final String json = "{"
+                + "   \"mapping\": {"
+                + "       \"response\": {"
+                + "           \"transformerParameters\": {"
+                + "               \"openapiValidationOpenapiPrintConfig\": false,"
+                + "               \"openapiValidationOpenapiFilePath\": \"anotherFile\","
+                + "               \"openapiValidationOpenapiIgnoreOpenapiErrors\": false,"
+                + "               \"openapiValidationOpenapiValidatorName\": \"anotherValidator\","
+                + "               \"openapiValidationFailureStatusCode\": 418,"
+                + "               \"openapiValidationIgnoreErrors\": {"
+                + "                   \"error1\": true,"
+                + "                   \"error2\": false,"
+                + "                   \"error4\": true,"
+                + "                   \"error5\": false"
+                + "               }"
+                + "           }"
+                + "       }"
+                + "   }"
+                + "}";
         final ServeEvent serveEvent = new ObjectMapper().readValue(json, ServeEvent.class);
         final ValidationTransformerParameters parameters = ValidationTransformerParameters.fromServeEvent(serveEvent);
 
@@ -184,18 +181,15 @@ class ExtensionOptionsTest {
                 .withFailureStatusCode(123)
                 .withIgnoredErrors(List.of("error1", "error2", "error3"))
                 .build();
-        final String json =
-                """
-                {
-                    "mapping": {
-                        "response": {
-                            "transformerParameters": {
-                                "openapiValidationFailureStatusCode": 418
-                            }
-                        }
-                    }
-                }
-                """;
+        final String json = "{"
+                + "    \"mapping\": {"
+                + "        \"response\": {"
+                + "            \"transformerParameters\": {"
+                + "                \"openapiValidationFailureStatusCode\": 418"
+                + "            }"
+                + "        }"
+                + "    }"
+                + "}";
         final ServeEvent serveEvent = new ObjectMapper().readValue(json, ServeEvent.class);
         final ValidationTransformerParameters parameters = ValidationTransformerParameters.fromServeEvent(serveEvent);
 
