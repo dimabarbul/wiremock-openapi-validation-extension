@@ -20,7 +20,7 @@ For Maven:
 <dependency>
     <groupId>io.github.dimabarbul</groupId>
     <artifactId>wiremock-openapi-validation-extension</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
 </dependency>
 ```
 
@@ -28,7 +28,7 @@ For Gradle:
 
 ```groovy
 dependencies {
-    implementation 'io.github.dimabarbul:wiremock-openapi-validation-extension:1.0.1'
+    implementation 'io.github.dimabarbul:wiremock-openapi-validation-extension:1.0.2'
 }
 ```
 
@@ -63,12 +63,12 @@ The extension depends on wiremock package to be provided, so to run it you need 
 ```bash
 # download jars
 wget https://repo1.maven.org/maven2/org/wiremock/wiremock-standalone/3.9.1/wiremock-standalone-3.9.1.jar
-wget https://repo1.maven.org/maven2/io/github/dimabarbul/wiremock-openapi-validation-extension/1.0.1/wiremock-openapi-validation-extension-1.0.1.jar
+wget https://repo1.maven.org/maven2/io/github/dimabarbul/wiremock-openapi-validation-extension/1.0.2/wiremock-openapi-validation-extension-1.0.2-jar-with-dependencies.jar
 # run with default file path
-java -cp "wiremock-openapi-validation-extension-1.0.1.jar:wiremock-standalone-3.9.1.jar" \
+java -cp "wiremock-openapi-validation-extension-1.0.2-jar-with-dependencies.jar:wiremock-standalone-3.9.1.jar" \
   wiremock.Run
 # run with specified file path
-java -cp "wiremock-openapi-validation-extension-1.0.1.jar:wiremock-standalone-3.9.1.jar" \
+java -cp "wiremock-openapi-validation-extension-1.0.2-jar-with-dependencies.jar:wiremock-standalone-3.9.1.jar" \
   -Dopenapi_validation_file_path=https://petstore3.swagger.io/api/v3/openapi.json \
   wiremock.Run
 ```
@@ -219,14 +219,14 @@ Provide configuration when running using downloaded jar files:
 
 ```bash
 # use Java system properties
-java -cp "wiremock-openapi-validation-extension-1.0.1.jar:wiremock-standalone-3.9.1.jar" \
+java -cp "wiremock-openapi-validation-extension-1.0.2.jar:wiremock-standalone-3.9.1.jar" \
   -Dopenapi_validation_file_path=https://petstore3.swagger.io/api/v3/openapi.json \
   -Dopenapi_validation_failure_status_code=418 \
   wiremock.Run
 # use environment variables
 OPENAPI_VALIDATION_FILE_PATH=https://petstore3.swagger.io/api/v3/openapi.json \
   OPENAPI_VALIDATION_FAILURE_STATUS_CODE=418 \
-  java -cp "wiremock-openapi-validation-extension-1.0.1.jar:wiremock-standalone-3.9.1.jar" \
+  java -cp "wiremock-openapi-validation-extension-1.0.2.jar:wiremock-standalone-3.9.1.jar" \
   wiremock.Run
 ```
 

@@ -193,10 +193,10 @@ You can download WireMock standalone jar file and run the project jar file along
 ```bash
 wget https://repo1.maven.org/maven2/org/wiremock/wiremock-standalone/3.9.1/wiremock-standalone-3.9.1.jar
 mvn clean package
-java -cp "target/wiremock-openapi-validation-extension-<VERSION>.jar:wiremock-standalone-3.9.1.jar" wiremock.Run
+java -cp "target/wiremock-openapi-validation-extension-<VERSION>-jar-with-dependencies.jar:wiremock-standalone-3.9.1.jar" wiremock.Run
 
 # the same but allowing remote debug
-java -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005 -cp "target/wiremock-openapi-validation-extension-<VERSION>.jar:wiremock-standalone-3.9.1.jar" wiremock.Run
+java -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005 -cp "target/wiremock-openapi-validation-extension-<VERSION>-jar-with-dependencies.jar:wiremock-standalone-3.9.1.jar" wiremock.Run
 ```
 
 ## Code Style
