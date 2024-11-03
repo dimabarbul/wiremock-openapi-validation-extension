@@ -317,7 +317,7 @@
               </properties>
               <licenseSets>
                 <licenseSet>
-                  <header>${basedir}/license-header.txt</header>
+                  <header>${basedir}/file-header.txt</header>
                   <excludes>
                     <exclude>**/*.json</exclude>
                     <exclude>**/*.yml</exclude>
