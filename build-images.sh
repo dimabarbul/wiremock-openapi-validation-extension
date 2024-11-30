@@ -20,9 +20,11 @@ set -e
 if [ "$1" = "--help" -o "$1" = "-h" ]; then
     echo "Just execute the script"
     echo "Environment variables:"
-    echo "  NOBUILD - empty to build docker images, non-empty to skip build"
-    echo "  PUSH    - non-empty to push docker images to docker registry"
-    echo "            empty to skip push"
+    echo "  NOBUILD         - empty to build docker images, non-empty to skip build"
+    echo "  PUSH            - non-empty to push docker images to docker registry"
+    echo "                    empty to skip push"
+    echo "  PROJECT_VERSION - if not empty, its value will be used, otherwise"
+    echo "                    it will be calculated using Maven"
     exit 1;
 fi
 
