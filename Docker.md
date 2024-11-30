@@ -147,8 +147,8 @@ Following image tags are supported:
 
 | Tag                                  | Based on WireMock image tag |
 |--------------------------------------|-----------------------------|
-| 1.0.2<br>1.0<br>latest               | 3.9.1-1                     |
-| 1.0.2-alpine<br>1.0-alpine<br>alpine | 3.9.1-1-alpine              |
+| 1.1.0<br>1.1<br>latest               | 3.10.0-1                    |
+| 1.1.0-alpine<br>1.1-alpine<br>alpine | 3.10.0-1-alpine             |
 
 ## Running
 
@@ -170,7 +170,7 @@ Another option is to provide URL as OpenAPI file:
 ```bash
 docker run -it --rm \
   -p 8080:8080 \
-  -e OPENAPI_VALIDATION_FILE_PATH=https://petstore3.swagger.io/api/v3/openapi.json
+  -e OPENAPI_VALIDATION_FILE_PATH=https://petstore3.swagger.io/api/v3/openapi.json \
   -v $PWD/mappings:/home/wiremock/mappings \
   -v $PWD/__files:/home/wiremock/__files \
   dimabarbul/wiremock-openapi-validation:latest
