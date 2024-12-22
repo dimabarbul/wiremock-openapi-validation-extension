@@ -126,13 +126,13 @@ public final class ValidationResponseTransformer implements ResponseTransformerV
 
     private static String prettifyForOutput(final LoggedRequest request) {
         return String.format(
-                "URL: %s\nHeaders:\n%s\nBody: %s", request.getUrl(), request.getHeaders(), request.getBodyAsString());
+                "%s %s\n\n%s\n%s",
+                request.getMethod(), request.getUrl(), request.getHeaders(), request.getBodyAsString());
     }
 
     private static String prettifyForOutput(final Response response) {
         return String.format(
-                "Status code: %d\nHeaders:\n%s\nBody: %s",
-                response.getStatus(), response.getHeaders(), response.getBodyAsString());
+                "HTTP/1.1 %d\n\n%s\n%s", response.getStatus(), response.getHeaders(), response.getBodyAsString());
     }
 
     private void printConfiguration() {
