@@ -143,6 +143,7 @@ After release there is a couple of manual steps:
 
 - publish artifact on [Sonatype](https://central.sonatype.com/publishing) to make it available through Maven central repository
 - update repository description on hub.docker.com (can just copy [Docker.md](./Docker.md))
+- create release on GitHub
 
 ### Troubleshooting
 
