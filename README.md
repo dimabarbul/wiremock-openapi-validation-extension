@@ -211,6 +211,18 @@ Example of validation failure response:
 
 In the example above the request failed because of error with key `validation.request.body.missing` and the response has error with key `validation.response.body.schema.required`.
 
+### Default Response Content-Type
+
+| Where to Set          | Name                                             |
+|-----------------------|--------------------------------------------------|
+| Environment Variable  | OPENAPI_VALIDATION_DEFAULT_RESPONSE_CONTENT_TYPE |
+| System Property       | openapi_validation_default_response_content_type |
+| Transformer Parameter | N/A                                              |
+
+**Default**:
+
+Content-type header value that is used when WireMock mapping does not have one.
+
 ### Examples
 
 Following code snippets show different examples of providing configuration. They are expected to be run on Linux or WSL. For Windows cmd or powershell, I believe, some similar approaches exist.

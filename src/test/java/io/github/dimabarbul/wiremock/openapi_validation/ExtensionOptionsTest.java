@@ -43,7 +43,8 @@ class ExtensionOptionsTest {
                 () -> assertThat(options.isInvalidOpenapiAllowed()).isFalse(),
                 () -> assertThat(options.getFailureStatusCode()).isEqualTo(500),
                 () -> assertThat(options.getIgnoredErrors()).isEmpty(),
-                () -> assertThat(options.getValidatorName()).isEqualTo("atlassian"));
+                () -> assertThat(options.getValidatorName()).isEqualTo("atlassian"),
+                () -> assertThat(options.getDefaultResponseContentType()).isNull());
     }
 
     @Test
@@ -55,6 +56,7 @@ class ExtensionOptionsTest {
                 .addSystemProperties("openapi_validation_failure_status_code", "512")
                 .addSystemProperties("openapi_validation_ignore_errors", "1,2, 3 ")
                 .addSystemProperties("openapi_validation_validator_name", "validator")
+                .addSystemProperties("openapi_validation_default_response_content_type", "application/json")
                 .build();
 
         ExtensionOptions options = ExtensionOptions.fromSystemParameters(systemAccessor);
@@ -67,7 +69,8 @@ class ExtensionOptionsTest {
                 () -> assertThat(options.isInvalidOpenapiAllowed()).isTrue(),
                 () -> assertThat(options.getFailureStatusCode()).isEqualTo(512),
                 () -> assertThat(options.getIgnoredErrors()).containsExactly("1", "2", "3"),
-                () -> assertThat(options.getValidatorName()).isEqualTo("validator"));
+                () -> assertThat(options.getValidatorName()).isEqualTo("validator"),
+                () -> assertThat(options.getDefaultResponseContentType()).isEqualTo("application/json"));
     }
 
     @Test
@@ -79,6 +82,7 @@ class ExtensionOptionsTest {
                 .addEnvironmentVariables("OPENAPI_VALIDATION_FAILURE_STATUS_CODE", "512")
                 .addEnvironmentVariables("OPENAPI_VALIDATION_IGNORE_ERRORS", "1, 2 ,3")
                 .addEnvironmentVariables("OPENAPI_VALIDATION_VALIDATOR_NAME", "validator")
+                .addEnvironmentVariables("OPENAPI_VALIDATION_DEFAULT_RESPONSE_CONTENT_TYPE", "application/json")
                 .build();
 
         ExtensionOptions options = ExtensionOptions.fromSystemParameters(systemAccessor);
@@ -91,7 +95,8 @@ class ExtensionOptionsTest {
                 () -> assertThat(options.isInvalidOpenapiAllowed()).isTrue(),
                 () -> assertThat(options.getFailureStatusCode()).isEqualTo(512),
                 () -> assertThat(options.getIgnoredErrors()).containsExactly("1", "2", "3"),
-                () -> assertThat(options.getValidatorName()).isEqualTo("validator"));
+                () -> assertThat(options.getValidatorName()).isEqualTo("validator"),
+                () -> assertThat(options.getDefaultResponseContentType()).isEqualTo("application/json"));
     }
 
     @Test
@@ -103,6 +108,7 @@ class ExtensionOptionsTest {
                 .withValidatorName("validator")
                 .withFailureStatusCode(123)
                 .withIgnoredErrors(List.of("error1", "error2"))
+                .withDefaultResponseContentType("application/json")
                 .build();
         final ValidationTransformerParameters parameters =
                 ValidationTransformerParameters.fromServeEvent(new ObjectMapper().readValue("{}", ServeEvent.class));
@@ -120,7 +126,9 @@ class ExtensionOptionsTest {
                 () -> assertThat(mergedOptions.isInvalidOpenapiAllowed())
                         .isEqualTo(originalOptions.isInvalidOpenapiAllowed()),
                 () -> assertThat(mergedOptions.getFailureStatusCode())
-                        .isEqualTo(originalOptions.getFailureStatusCode()));
+                        .isEqualTo(originalOptions.getFailureStatusCode()),
+                () -> assertThat(mergedOptions.getDefaultResponseContentType())
+                        .isEqualTo(originalOptions.getDefaultResponseContentType()));
     }
 
     @Test
@@ -132,6 +140,7 @@ class ExtensionOptionsTest {
                 .withValidatorName("validator")
                 .withFailureStatusCode(123)
                 .withIgnoredErrors(List.of("error1", "error2", "error3"))
+                .withDefaultResponseContentType("application/json")
                 .build();
         final String json = "{"
                 + "   \"mapping\": {"
@@ -139,6 +148,7 @@ class ExtensionOptionsTest {
                 + "           \"transformerParameters\": {"
                 + "               \"openapiValidationOpenapiPrintConfig\": false,"
                 + "               \"openapiValidationOpenapiFilePath\": \"anotherFile\","
+                + "               \"openapiValidationAllowInvalidOpenapi\": false,"
                 + "               \"openapiValidationOpenapiIgnoreOpenapiErrors\": false,"
                 + "               \"openapiValidationOpenapiValidatorName\": \"anotherValidator\","
                 + "               \"openapiValidationFailureStatusCode\": 418,"
@@ -147,7 +157,8 @@ class ExtensionOptionsTest {
                 + "                   \"error2\": false,"
                 + "                   \"error4\": true,"
                 + "                   \"error5\": false"
-                + "               }"
+                + "               },"
+                + "               \"openapiValidationDefaultResponseContentType\": \"text/plain\""
                 + "           }"
                 + "       }"
                 + "   }"
@@ -168,7 +179,9 @@ class ExtensionOptionsTest {
                 () -> assertThat(mergedOptions.getValidatorName()).isEqualTo(originalOptions.getValidatorName()),
                 () -> assertThat(mergedOptions.getFailureStatusCode()).isEqualTo(parameters.getFailureStatusCode()),
                 () -> assertThat(mergedOptions.getIgnoredErrors())
-                        .containsExactlyInAnyOrder("error1", "error3", "error4"));
+                        .containsExactlyInAnyOrder("error1", "error3", "error4"),
+                () -> assertThat(mergedOptions.getDefaultResponseContentType())
+                        .isEqualTo(originalOptions.getDefaultResponseContentType()));
     }
 
     @Test
@@ -180,6 +193,7 @@ class ExtensionOptionsTest {
                 .withValidatorName("validator")
                 .withFailureStatusCode(123)
                 .withIgnoredErrors(List.of("error1", "error2", "error3"))
+                .withDefaultResponseContentType("application/json")
                 .build();
         final String json = "{"
                 + "    \"mapping\": {"
@@ -205,7 +219,9 @@ class ExtensionOptionsTest {
                 () -> assertThat(mergedOptions.getValidatorName()).isEqualTo(originalOptions.getValidatorName()),
                 () -> assertThat(mergedOptions.isInvalidOpenapiAllowed())
                         .isEqualTo(originalOptions.isInvalidOpenapiAllowed()),
-                () -> assertThat(mergedOptions.getFailureStatusCode()).isEqualTo(parameters.getFailureStatusCode()));
+                () -> assertThat(mergedOptions.getFailureStatusCode()).isEqualTo(parameters.getFailureStatusCode()),
+                () -> assertThat(mergedOptions.getDefaultResponseContentType())
+                        .isEqualTo(originalOptions.getDefaultResponseContentType()));
     }
 
     private static class TestSystemAccessor implements SystemAccessor {

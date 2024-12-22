@@ -38,23 +38,6 @@
     {
       "request": {
         "urlPathPattern": "/users",
-        "method": "POST",
-        "bodyPatterns": [
-          {
-            "matchesJsonPath": {
-              "expression": "$.id",
-              "matches": "/^1|2$/"
-            }
-          }
-        ]
-      },
-      "response": {
-        "status": 409
-      }
-    },
-    {
-      "request": {
-        "urlPathPattern": "/users",
         "method": "POST"
       },
       "response": {

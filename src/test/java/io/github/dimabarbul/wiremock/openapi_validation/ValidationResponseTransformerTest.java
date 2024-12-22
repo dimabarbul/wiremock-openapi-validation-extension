@@ -31,6 +31,7 @@ import com.github.tomakehurst.wiremock.http.MultiValue;
 import com.github.tomakehurst.wiremock.http.Response;
 import com.github.tomakehurst.wiremock.matching.UrlPattern;
 import com.google.common.net.MediaType;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.apache.http.HttpStatus;
@@ -297,7 +298,7 @@ abstract class ValidationResponseTransformerTest {
     }
 
     @Test
-    void testRequestWithoutContentTypeThrowsException() {
+    void testRequestWithoutContentType() {
         wm.stubFor(post(ADD_USER_URL).willReturn(created()));
 
         Response response = server.stubRequest(postRequestWithoutContentType(
@@ -313,7 +314,7 @@ abstract class ValidationResponseTransformerTest {
     }
 
     @Test
-    void testResponseWithoutContentTypeThrowsException() {
+    void testResponseWithoutContentType() {
         wm.stubFor(get(GET_USERS_URL)
                 .willReturn(aResponse()
                         .withStatus(200)
@@ -330,6 +331,60 @@ abstract class ValidationResponseTransformerTest {
 
         assertResponseFailedBecauseOfValidation(response);
         assertThat(response.getBodyAsString()).contains("Response Content-Type header is missing");
+    }
+
+    @Test
+    void testResponseWithoutContentTypeButWithDefaultResponseContentType() {
+        WireMockServer wm = new WireMockServer(getWireMockConfiguration(
+                ExtensionOptions.builder().withDefaultResponseContentType(MediaType.JSON_UTF_8.toString())));
+        DirectCallHttpServer server = factory.getHttpServer();
+
+        wm.stubFor(get(GET_USERS_URL)
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withBody(JsonNodeFactory.instance
+                                .arrayNode()
+                                .add(JsonNodeFactory.instance
+                                        .objectNode()
+                                        .put("id", UUID.randomUUID().toString())
+                                        .put("username", "root")
+                                        .put("role", "admin"))
+                                .toString())));
+
+        Response response = server.stubRequest(getRequest(wm.url(GET_USERS_URL)));
+
+        assertThat(response.getStatus())
+                .as("response should be successful, got body \"%s\"", response.getBodyAsString())
+                .isEqualTo(HttpStatus.SC_OK);
+        assertThat(response.getHeaders().getContentTypeHeader().values())
+                .as("response content-type should match default content-type, got \"%s\"")
+                .isEqualTo(List.of(MediaType.JSON_UTF_8.toString()));
+    }
+
+    @Test
+    void testResponseWithContentTypeAndWithDefaultResponseContentType() {
+        WireMockServer wm = new WireMockServer(getWireMockConfiguration(
+                ExtensionOptions.builder().withDefaultResponseContentType(MediaType.PLAIN_TEXT_UTF_8.toString())));
+        DirectCallHttpServer server = factory.getHttpServer();
+
+        wm.stubFor(get(GET_USERS_URL)
+                .willReturn(okJson(JsonNodeFactory.instance
+                        .arrayNode()
+                        .add(JsonNodeFactory.instance
+                                .objectNode()
+                                .put("id", UUID.randomUUID().toString())
+                                .put("username", "root")
+                                .put("role", "admin"))
+                        .toString())));
+
+        Response response = server.stubRequest(getRequest(wm.url(GET_USERS_URL)));
+
+        assertThat(response.getStatus())
+                .as("response should be successful, got body \"%s\"", response.getBodyAsString())
+                .isEqualTo(HttpStatus.SC_OK);
+        assertThat(response.getHeaders().getContentTypeHeader().values())
+                .as("response content-type should match mapping content-type")
+                .isEqualTo(List.of("application/json"));
     }
 
     protected WireMockConfiguration getDefaultWireMockConfiguration() {

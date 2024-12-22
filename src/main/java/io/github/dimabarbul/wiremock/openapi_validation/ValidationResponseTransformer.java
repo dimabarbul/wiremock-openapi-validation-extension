@@ -18,6 +18,8 @@ package io.github.dimabarbul.wiremock.openapi_validation;
 import static com.github.tomakehurst.wiremock.common.LocalNotifier.notifier;
 
 import com.github.tomakehurst.wiremock.extension.ResponseTransformerV2;
+import com.github.tomakehurst.wiremock.http.ContentTypeHeader;
+import com.github.tomakehurst.wiremock.http.HttpHeader;
 import com.github.tomakehurst.wiremock.http.Response;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
@@ -74,6 +76,7 @@ public final class ValidationResponseTransformer implements ResponseTransformerV
         }
 
         final LoggedRequest request = serveEvent.getRequest();
+        final Response extendedResponse = extendResponse(response);
 
         final ValidationTransformerParameters parameters = ValidationTransformerParameters.fromServeEvent(serveEvent);
         final ExtensionOptions mergedOptions =
@@ -81,16 +84,16 @@ public final class ValidationResponseTransformer implements ResponseTransformerV
         final OpenApiValidator validator =
                 globalValidator.withOptions(OpenApiValidatorOptions.fromExtensionOptions(mergedOptions));
         final ValidationResult requestValidationResult = validator.validateRequest(request);
-        final ValidationResult responseValidationResult = validator.validateResponse(request, response);
+        final ValidationResult responseValidationResult = validator.validateResponse(request, extendedResponse);
 
         if (requestValidationResult.hasErrors() || responseValidationResult.hasErrors()) {
             final Response errorResponse = ErrorResponseBuilder.buildResponse(
                     mergedOptions.getFailureStatusCode(), requestValidationResult, responseValidationResult);
-            log(request, response, errorResponse);
+            log(request, extendedResponse, errorResponse);
             return errorResponse;
         }
 
-        return response;
+        return extendedResponse;
     }
 
     @Override
@@ -151,5 +154,16 @@ public final class ValidationResponseTransformer implements ResponseTransformerV
             System.out.println(String.join("\n                              ", options.getIgnoredErrors()));
         }
         System.out.println();
+    }
+
+    private Response extendResponse(final Response response) {
+        final String defaultContentType = options.getDefaultResponseContentType();
+        if (response.getHeaders().getContentTypeHeader().isPresent() || defaultContentType == null) {
+            return response;
+        }
+
+        return Response.Builder.like(response)
+                .headers(response.getHeaders().plus(HttpHeader.httpHeader(ContentTypeHeader.KEY, defaultContentType)))
+                .build();
     }
 }

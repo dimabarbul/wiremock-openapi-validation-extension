@@ -30,6 +30,8 @@ final class ValidationParameter {
     public static final ValidationParameter FAILURE_STATUS_CODE =
             new ValidationParameter("openapi_validation_failure_status_code");
     public static final ValidationParameter IGNORE_ERRORS = new ValidationParameter("openapi_validation_ignore_errors");
+    public static final ValidationParameter DEFAULT_RESPONSE_CONTENT_TYPE =
+            new ValidationParameter("openapi_validation_default_response_content_type");
 
     /** Name in lower_snake_case format. */
     private final String name;

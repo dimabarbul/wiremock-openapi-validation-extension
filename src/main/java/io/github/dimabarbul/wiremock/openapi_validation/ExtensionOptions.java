@@ -35,6 +35,7 @@ public final class ExtensionOptions {
     private final String validatorName;
     private final int failureStatusCode;
     private final ImmutableList<String> ignoredErrors;
+    private final String defaultResponseContentType;
 
     private ExtensionOptions(
             final boolean shouldPrintConfiguration,
@@ -42,13 +43,15 @@ public final class ExtensionOptions {
             final boolean allowInvalidOpenapi,
             final String validatorName,
             final int failureStatusCode,
-            final ImmutableList<String> ignoredErrors) {
+            final ImmutableList<String> ignoredErrors,
+            final String defaultResponseContentType) {
         this.shouldPrintConfiguration = shouldPrintConfiguration;
         this.openapiFilePath = openapiFilePath;
         this.allowInvalidOpenapi = allowInvalidOpenapi;
         this.validatorName = validatorName;
         this.failureStatusCode = failureStatusCode;
         this.ignoredErrors = requireNonNull(ignoredErrors);
+        this.defaultResponseContentType = defaultResponseContentType;
     }
 
     /**
@@ -96,6 +99,8 @@ public final class ExtensionOptions {
         getGlobalParameter(systemAccessor, ValidationParameter.IGNORE_ERRORS)
                 .map(e -> Arrays.stream(e.split(",")).map(String::trim).collect(Collectors.toList()))
                 .ifPresent(builder::withIgnoredErrors);
+        getGlobalParameter(systemAccessor, ValidationParameter.DEFAULT_RESPONSE_CONTENT_TYPE)
+                .ifPresent(builder::withDefaultResponseContentType);
         return builder.build();
     }
 
@@ -158,6 +163,15 @@ public final class ExtensionOptions {
         return validatorName;
     }
 
+    /**
+     * Get content-type header value to use when it is not set in mapping.
+     *
+     * @return Content-type header value to use when it is not set in mapping
+     */
+    public String getDefaultResponseContentType() {
+        return defaultResponseContentType;
+    }
+
     /** Builder for extension options. */
     public static final class Builder {
 
@@ -167,6 +181,7 @@ public final class ExtensionOptions {
         private String validatorName = "atlassian";
         private int failureStatusCode = DEFAULT_FAILURE_STATUS_CODE;
         private List<String> ignoredErrors = List.of();
+        private String defaultResponseContentType = null;
 
         /** Create new builder with default values. */
         public Builder() {}
@@ -183,6 +198,7 @@ public final class ExtensionOptions {
             allowInvalidOpenapi = options.isInvalidOpenapiAllowed();
             failureStatusCode = options.getFailureStatusCode();
             ignoredErrors = options.getIgnoredErrors();
+            defaultResponseContentType = options.getDefaultResponseContentType();
         }
 
         /**
@@ -262,6 +278,17 @@ public final class ExtensionOptions {
         }
 
         /**
+         * Set content-type header value to use when it is not set in mapping.
+         *
+         * @param defaultResponseContentType Content-type header value to use when it is not set in mapping
+         * @return Builder
+         */
+        public Builder withDefaultResponseContentType(final String defaultResponseContentType) {
+            this.defaultResponseContentType = defaultResponseContentType;
+            return this;
+        }
+
+        /**
          * Build extension options with values from the builder.
          *
          * @return Extension options
@@ -273,7 +300,8 @@ public final class ExtensionOptions {
                     allowInvalidOpenapi,
                     validatorName,
                     failureStatusCode,
-                    ImmutableList.copyOf(ignoredErrors));
+                    ImmutableList.copyOf(ignoredErrors),
+                    defaultResponseContentType);
         }
 
         Builder mergeWith(final ValidationTransformerParameters parameters) {
