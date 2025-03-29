@@ -14,5 +14,5 @@
 # limitations under the License.
 #
 
-FROM wiremock/wiremock:3.10.0-1
+FROM wiremock/wiremock:3.12.1-1
 COPY target/wiremock-openapi-validation-extension-*-jar-with-dependencies.jar /var/wiremock/extensions
