@@ -113,7 +113,7 @@ mvn -B -Dstyle.color=always release:prepare -DdryRun
 mvn -B -Dstyle.color=always release:perform -DdryRun
 ```
 
-Batch mode allows avoiding questions and makes release used preconfigured settings.
+Batch mode allows avoiding questions and makes release use preconfigured settings.
 
 If you want to change connection to source control management system during deployment, you can provide custom SCM connection during `prepare` goal:
 
@@ -194,12 +194,12 @@ OPENAPI_VALIDATION_FILE_PATH=demo/openapi.json \
 You can download WireMock standalone jar file and run the project jar file alongside it.
 
 ```bash
-wget https://repo1.maven.org/maven2/org/wiremock/wiremock-standalone/3.10.0/wiremock-standalone-3.10.0.jar
+wget https://repo1.maven.org/maven2/org/wiremock/wiremock-standalone/3.13.0/wiremock-standalone-3.13.0.jar
 mvn clean package
-java -cp "target/wiremock-openapi-validation-extension-<VERSION>-jar-with-dependencies.jar:wiremock-standalone-3.10.0.jar" wiremock.Run
+java -cp "target/wiremock-openapi-validation-extension-<VERSION>-jar-with-dependencies.jar:wiremock-standalone-3.13.0.jar" wiremock.Run
 
 # the same but allowing remote debug
-java -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005 -cp "target/wiremock-openapi-validation-extension-<VERSION>-jar-with-dependencies.jar:wiremock-standalone-3.10.0.jar" wiremock.Run
+java -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005 -cp "target/wiremock-openapi-validation-extension-<VERSION>-jar-with-dependencies.jar:wiremock-standalone-3.13.0.jar" wiremock.Run
 ```
 
 ## Code Style

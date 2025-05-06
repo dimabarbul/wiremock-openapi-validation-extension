@@ -147,8 +147,8 @@ Following image tags are supported:
 
 | Tag                                  | Based on WireMock image tag |
 |--------------------------------------|-----------------------------|
-| 1.3.0<br>1.3<br>latest               | 3.12.1-1                    |
-| 1.3.0-alpine<br>1.3-alpine<br>alpine | 3.12.1-1-alpine             |
+| 1.4.0<br>1.4<br>latest               | 3.13.0-1                    |
+| 1.4.0-alpine<br>1.4-alpine<br>alpine | 3.13.0-1-alpine             |
 
 ## Running
 
