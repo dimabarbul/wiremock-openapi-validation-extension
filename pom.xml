@@ -22,7 +22,7 @@
 
   <groupId>io.github.dimabarbul</groupId>
   <artifactId>wiremock-openapi-validation-extension</artifactId>
-  <version>1.5.0</version>
+  <version>1.6.0-SNAPSHOT</version>
 
   <name>WireMock OpenAPI validation extension</name>
   <description>The extension allows to validate request and response against OpenAPI file.</description>
@@ -30,7 +30,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.build.outputTimestamp>2025-06-28T11:09:35Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2025-06-28T11:10:13Z</project.build.outputTimestamp>
     <maven.compiler.release>11</maven.compiler.release>
     <wiremock.version>3.13.1</wiremock.version>
     <swagger-valildator.version>2.44.9</swagger-valildator.version>
