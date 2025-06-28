@@ -33,10 +33,15 @@ function expand_versions
     declare -a result
     current="$1"
 
-    while [[ "$current" =~ \. ]]; do
-        result+=($current);
-        current=${current%.*}
-    done
+    if [[ "${PROJECT_VERSION}" =~ -SNAPSHOT$ ]]; then
+        result+=($current snapshot)
+    else
+        while [[ "$current" =~ \. ]]; do
+            result+=($current);
+            current=${current%.*}
+        done
+        result+=(latest)
+    fi
 
     echo "${result[@]}"
 }
@@ -57,19 +62,14 @@ if [ -z "${NOBUILD}" ]; then
 else
     BUILD=false;
 fi
-if [[ "${PROJECT_VERSION}" =~ -SNAPSHOT$ ]]; then
-    IS_SNAPSHOT_VERSION=true
-else
-    IS_SNAPSHOT_VERSION=false
-fi
-if [ "$IS_SNAPSHOT_VERSION" = "false" ]; then
-    IMAGE_VERSIONS=( $(expand_versions $IMAGE_VERSION) )
-else
-    IMAGE_VERSIONS=($IMAGE_VERSION)
-fi
+IMAGE_VERSIONS=( $(expand_versions $IMAGE_VERSION) )
 declare -a IMAGE_VERSIONS_ALPINE;
 for v in "${IMAGE_VERSIONS[@]}"; do
-    IMAGE_VERSIONS_ALPINE+=("${v}-alpine")
+    if [ "$v" = "latest" ]; then
+        IMAGE_VERSIONS_ALPINE+=(alpine)
+    else
+        IMAGE_VERSIONS_ALPINE+=("${v}-alpine")
+    fi
 done
 
 echo
@@ -98,32 +98,12 @@ if [ "${BUILD}" = "true" ]; then
         echo "Tagging ${IMAGE_VERSIONS_ALPINE[0]} as ${v}"
         docker tag ${IMAGE_NAME}:${IMAGE_VERSIONS_ALPINE[0]} ${IMAGE_NAME}:${v}
     done
-    if [ "${IS_SNAPSHOT_VERSION}" = "false" ]; then
-        echo "Adding tag latest"
-        docker tag ${IMAGE_NAME}:${IMAGE_VERSIONS[0]} ${IMAGE_NAME}:latest
-        echo "Adding tag alpine"
-        docker tag ${IMAGE_NAME}:${IMAGE_VERSIONS_ALPINE[0]} ${IMAGE_NAME}:alpine
-    fi
 fi
 
 if [ "${PUSH}" = "true" ]; then
-    echo "Pushing ${IMAGE_VERSIONS[0]}"
-    docker push ${IMAGE_NAME}:${IMAGE_VERSIONS[0]}
-    for v in "${IMAGE_VERSIONS[@]:1}"; do
-        echo "Pushing ${v}"
-        docker push ${IMAGE_NAME}:${v}
+    for version in "${IMAGE_VERSIONS[@]}" "${IMAGE_VERSIONS_ALPINE[@]}"; do
+        echo "Pushing ${version}"
+        docker push ${IMAGE_NAME}:${version}
     done
-    echo "Pushing ${IMAGE_VERSIONS_ALPINE[0]}"
-    docker push ${IMAGE_NAME}:${IMAGE_VERSIONS_ALPINE[0]}
-    for v in "${IMAGE_VERSIONS_ALPINE[@]:1}"; do
-        echo "Pushing ${v}"
-        docker push ${IMAGE_NAME}:${v}
-    done
-    if [ "${IS_SNAPSHOT_VERSION}" = "false" ]; then
-        echo "Pushing latest"
-        docker push ${IMAGE_NAME}:latest
-        echo "Pushing alpine"
-        docker push ${IMAGE_NAME}:alpine
-    fi
 fi
 

@@ -28,7 +28,9 @@ Docker images will have tags based on project version. For example, for version 
 
 - for version ending with `-SNAPSHOT`:
   - x.y.z-snapshot
+  - snapshot
   - x.y.z-snapshot-alpine
+  - snapshot-alpine
 - for version not ending with `-SNAPSHOT`:
   - x.y.z
   - x.y
