@@ -1,6 +1,6 @@
 # Building
 
-The document describes how to build, run, debug the project and so on.
+The document describes how to build, run, debug, release the project and so on.
 
 ## Build and Package
 
@@ -83,6 +83,12 @@ Sonatype server can be configured in `settings.xml` as following:
     </server>
   </servers>
 </settings>
+```
+
+To skip publishing artifact to Sonatype:
+
+```bash
+mvn clean deploy -DskipSonatype
 ```
 
 Check [documentation](https://central.sonatype.org/publish/publish-portal-maven/#credentials) for more information.
