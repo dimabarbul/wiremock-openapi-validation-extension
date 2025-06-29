@@ -56,7 +56,7 @@
     <connection>scm:git:https://github.com/dimabarbul/wiremock-openapi-validation-extension.git</connection>
     <developerConnection>${developer.connection}</developerConnection>
     <url>https://github.com/dimabarbul/wiremock-openapi-validation-extension</url>
-    <tag>1.5.0</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <dependencies>
@@ -90,12 +90,6 @@
       <scope>compile</scope>
     </dependency>
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-simple</artifactId>
-      <version>2.0.17</version>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>junit-jupiter</artifactId>
       <version>1.21.3</version>
@@ -112,16 +106,6 @@
 
   <build>
     <plugins>
-      <!-- clean lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#clean_Lifecycle -->
-      <plugin>
-        <artifactId>maven-clean-plugin</artifactId>
-        <version>3.5.0</version>
-      </plugin>
-      <!-- default lifecycle, jar packaging: see https://maven.apache.org/ref/current/maven-core/default-bindings.html#Plugin_bindings_for_jar_packaging -->
-      <plugin>
-        <artifactId>maven-resources-plugin</artifactId>
-        <version>3.3.1</version>
-      </plugin>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.14.0</version>
@@ -368,6 +352,7 @@
                     <exclude>**/.dockerignore</exclude>
                     <exclude>src/main/resources/**</exclude>
                     <exclude>src/test/resources/**</exclude>
+                    <exclude>settings-template.xml</exclude>
                   </excludes>
                 </licenseSet>
               </licenseSets>

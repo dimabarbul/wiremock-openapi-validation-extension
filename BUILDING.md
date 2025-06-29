@@ -10,19 +10,21 @@ To build the project you need Maven 3.8+ and JDK 11 installed. To build project 
 mvn clean compile
 ```
 
-This will compile the project and allow running it using `mvn exec:java` command shown later in [run](#run) section. Building using the command above runs all necessary checks including checking code style using [spotless](https://github.com/diffplug/spotless) with [palantir format](https://github.com/diffplug/spotless/tree/main/plugin-maven#palantir-java-format) and [license headers](https://oss.carbou.me/license-maven-plugin). If you want to skip those 2 checks, you can run command:
+The project uses [reproducible build](https://maven.apache.org/guides/mini/guide-reproducible-builds.html).
+
+This will compile the project and allow running it using `mvn exec:java` command shown later in [run](#run) section. Building using the command above runs all necessary checks including checking code style using [spotless](https://github.com/diffplug/spotless) with [palantir format](https://github.com/diffplug/spotless/tree/main/plugin-maven#palantir-java-format) and [license headers](https://oss.carbou.me/license-maven-plugin). If you want to skip those two checks, you can run command:
 
 ```bash
 mvn clean compile -DskipCodeStyle
 ```
 
-To generate jar file (result will be `target/wiremock-openapi-validation-extension-<VERSION>.jar`):
+To generate jar file (result will be `target/wiremock-openapi-validation-extension-<VERSION>.jar`) and build docker images:
 
 ```bash
 mvn clean package
 ```
 
-## Create Docker Images
+## Docker Images
 
 Docker images will have tags based on project version. For example, for version x.y.z images will have following tags:
 
@@ -39,21 +41,21 @@ Docker images will have tags based on project version. For example, for version 
   - x.y-alpine
   - alpine
 
-To build docker images there are 2 options: after generating jar file run `build-images.sh` or run Maven phase `verify`:
+To build docker images there are two options: after generating jar file run `build-images.sh` or run Maven phase `package`:
 
 ```bash
 # 1st option
-mvn clean package
+# create JAR file without building docker image
+mvn clean package -DskipDocker
+# make sure JAR file has been created before, i.e., this command will build
+# docker image with JAR file from last run of `mvn package`
 ./build-images.sh
 
-# 2nd option (requires gpg installed and configured)
-mvn clean verify
-
-# 2nd option (skips gpg step)
-mvn clean verify -Dgpg.skip
+# 2nd option
+mvn clean package
 ```
 
-`build-images.sh` script uses following environment variables.
+`build-images.sh` script gives more flexibility when building images. It uses following environment variables:
 
 | Environment Variable | Description                                                                        |
 |----------------------|------------------------------------------------------------------------------------|
@@ -63,7 +65,9 @@ mvn clean verify -Dgpg.skip
 
 ## Deploy
 
-Deploy phase pushes docker images (using `docker push`) and deploys artifacts to Sonatype (using `org.sonatype.central:central-publishing-maven-plugin` as described [here](https://central.sonatype.org/publish/publish-portal-maven/)) with server ID `ossrh`.
+Deploy phase pushes docker images (using `docker push` by running `build-images.sh` script with environment variables NOBUILD=1 and PUSH=1) and deploys artifacts to Sonatype (using `org.sonatype.central:central-publishing-maven-plugin` as described [here](https://central.sonatype.org/publish/publish-portal-maven/)) with server ID `ossrh`.
+
+You can copy `settings-template.xml` to your local Maven `settings.xml` location (usually found at `~/.m2/settings.xml` on Unix-based systems or `%USERPROFILE%\.m2\settings.xml` on Windows). Update the template with your credentials.
 
 Pushing docker images may be skipped using system property `skipDocker`:
 
@@ -73,21 +77,7 @@ mvn clean deploy -DskipDocker
 
 Publishing artifact requires signing using GPG (refer to [Sonatype guide](https://central.sonatype.org/publish/requirements/gpg/) and [Maven GPG plugin doc](https://maven.apache.org/plugins/maven-gpg-plugin/) for more info).
 
-Sonatype server can be configured in `settings.xml` as following:
-
-```xml
-<settings xmlns="http://maven.apache.org/SETTINGS/1.1.0">
-  <servers>
-    <server>
-      <id>ossrh</id>
-      <username>YOUR_USERNAME</username>
-      <password>YOUR_PASSWORD</password>
-    </server>
-  </servers>
-</settings>
-```
-
-To skip publishing artifact to Sonatype:
+To skip publishing artifact to Sonatype you can use system property `skipSonatype`:
 
 ```bash
 mvn clean deploy -DskipSonatype
@@ -152,12 +142,6 @@ After release there is a couple of manual steps:
 - publish artifact on [Sonatype](https://central.sonatype.com/publishing) to make it available through Maven central repository
 - update repository description on hub.docker.com (can just copy [Docker.md](./Docker.md))
 - create release on GitHub
-
-### Troubleshooting
-
-#### 401 when Uploading Artifact to Sonatype
-
-It looks like `central-publishing-maven-plugin` does not support (or has bug) when using encrypted token for authentication. Solution is to remove `settings-security.xml` and use plain token for authentication.
 
 ## Run
 
