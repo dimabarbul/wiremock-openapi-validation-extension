@@ -209,3 +209,15 @@ License header must be present in almost all files. License plugin is used to ve
 ```bash
 mvn license:format
 ```
+
+## Branching Strategy
+
+The project uses a simple trunk-based development model with a single `master` branch. All development work and releases
+happen directly on `master`. Releases are tagged using Git tags to mark specific versions.
+
+When contributing:
+
+1. Create feature branches from `master` if needed for larger changes.
+2. Keep feature branches short-lived and merge back to `master` quickly.
+
+Git tags mark release, they are created by Maven release plugin. Refer to [Release](#release) section for more details on the release.
