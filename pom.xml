@@ -73,8 +73,8 @@
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-engine</artifactId>
-      <version>5.13.1</version>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.13.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -94,6 +94,18 @@
       <artifactId>slf4j-simple</artifactId>
       <version>2.0.17</version>
       <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>1.21.3</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.rest-assured</groupId>
+      <artifactId>rest-assured</artifactId>
+      <version>5.5.5</version>
+      <scope>test</scope>
     </dependency>
 
   </dependencies>
@@ -250,7 +262,7 @@
             <executions>
               <execution>
                 <id>build-docker-images</id>
-                <phase>verify</phase>
+                <phase>package</phase>
                 <goals>
                   <goal>exec</goal>
                 </goals>
@@ -267,6 +279,20 @@
                     <PUSH>1</PUSH>
                   </environmentVariables>
                 </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <version>3.5.3</version>
+            <executions>
+              <execution>
+                <id>integration-tests</id>
+                <phase>integration-test</phase>
+                <goals>
+                  <goal>integration-test</goal>
+                  <goal>verify</goal>
+                </goals>
               </execution>
             </executions>
           </plugin>

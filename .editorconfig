@@ -1,0 +1,8 @@
+[*]
+indent_style = space
+
+[*.xml]
+indent_size = 2
+
+[*.sh]
+indent_size = 4
