@@ -272,4 +272,4 @@ Override parameters on per-stub level:
 
 ## Working with Source
 
-For information on how to build, run and so on from source, refer to [BUILDING.md](./BUILDING.md).
+For information on how to build, run and so on from source, refer to [BUILDING.md](Building.md).
