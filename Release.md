@@ -1,5 +1,7 @@
 # Release
 
+Version follow [semantic versioning](https://semver.org/), minor version is incremented after each update of WireMock.
+
 The project uses [release plugin](https://maven.apache.org/maven-release/maven-release-plugin/) for performing release. Apart from changes in source control management, release pushes docker images using `docker push` and uploads build artifact to Sonatype.
 
 **Before doing release** make sure [README.md](./README.md) and [Docker.md](./Docker.md) are updated with new version.
