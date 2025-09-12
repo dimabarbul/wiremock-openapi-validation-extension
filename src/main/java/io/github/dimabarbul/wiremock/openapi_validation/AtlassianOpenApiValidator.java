@@ -125,7 +125,7 @@ class AtlassianOpenApiValidator implements OpenApiValidator {
 
     private static com.atlassian.oai.validator.model.Request convertRequest(final Request request) {
         final SimpleRequest.Builder builder =
-                new SimpleRequest.Builder(request.getMethod().toString(), request.getUrl());
+                new SimpleRequest.Builder(request.getMethod().toString(), Urls.getPath(request.getUrl()));
 
         final Map<String, QueryParameter> queryParameters = Urls.splitQuery(URI.create(request.getUrl()));
         queryParameters.forEach((k, v) -> builder.withQueryParam(v.key(), v.values()));

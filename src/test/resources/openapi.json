@@ -5,6 +5,50 @@
     "version": "1.0.0"
   },
   "paths": {
+    "/api/{version}/users": {
+      "parameters": [
+        {
+          "name": "version",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "v1",
+              "v2"
+            ]
+          }
+        }
+      ],
+      "get": {
+        "description": "Advanced get users",
+        "parameters": [
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Sorting field.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/user"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/users": {
       "get": {
         "description": "Get users",

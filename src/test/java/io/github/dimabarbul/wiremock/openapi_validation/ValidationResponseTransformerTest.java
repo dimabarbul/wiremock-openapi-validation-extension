@@ -40,6 +40,7 @@ import org.junit.jupiter.api.Test;
 abstract class ValidationResponseTransformerTest {
 
     protected static final int DEFAULT_VALIDATION_FAILURE_STATUS_CODE = 500;
+    protected static final String ADVANCED_GET_USERS_URL = "/api/v1/users";
     protected static final String GET_USERS_URL = "/users";
     protected static final String ADD_USER_URL = "/users";
     protected static final String DELETE_USER_URL = "/users/123";
@@ -133,6 +134,17 @@ abstract class ValidationResponseTransformerTest {
         assertThat(response.getStatus())
                 .as("response should be successful, got body \"%s\"", response.getBodyAsString())
                 .isEqualTo(HttpStatus.SC_NO_CONTENT);
+    }
+
+    @Test
+    void testRequestHasOptionalQueryStringParameterWhenPathHasParameterInMiddle() {
+        wm.stubFor(get(urlPathEqualTo(ADVANCED_GET_USERS_URL)).willReturn(okJson("[]")));
+
+        Response response = server.stubRequest(getRequest(wm.url(ADVANCED_GET_USERS_URL + "?sort=username")));
+
+        assertThat(response.getStatus())
+                .as("response should be successful, got body \"%s\"", response.getBodyAsString())
+                .isEqualTo(HttpStatus.SC_OK);
     }
 
     @Test
