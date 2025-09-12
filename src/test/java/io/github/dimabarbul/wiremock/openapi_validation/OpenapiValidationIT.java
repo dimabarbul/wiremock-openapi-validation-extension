@@ -18,6 +18,10 @@ package io.github.dimabarbul.wiremock.openapi_validation;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
+import java.util.stream.Stream;
 import org.apache.http.HttpStatus;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -25,7 +29,7 @@ import org.junit.jupiter.params.AfterParameterizedClassInvocation;
 import org.junit.jupiter.params.BeforeParameterizedClassInvocation;
 import org.junit.jupiter.params.Parameter;
 import org.junit.jupiter.params.ParameterizedClass;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -33,8 +37,31 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 @ParameterizedClass
-@ValueSource(strings = {"snapshot", "snapshot-alpine"})
+@MethodSource("getImageTags")
 class OpenapiValidationIT {
+
+    private static String getProjectVersion() {
+        try (InputStream input = OpenapiValidationIT.class.getClassLoader().getResourceAsStream("version.properties")) {
+            if (input != null) {
+                Properties properties = new Properties();
+                properties.load(input);
+                String version = properties.getProperty("project.version");
+                if (version != null && !version.isEmpty()) {
+                    return version;
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Could not read version.properties file: " + e.getMessage());
+        }
+
+        throw new IllegalStateException("Could not determine project version");
+    }
+
+    static Stream<String> getImageTags() {
+        String projectVersion = getProjectVersion();
+        String baseTag = projectVersion.toLowerCase();
+        return Stream.of(baseTag, baseTag + "-alpine");
+    }
 
     static final int FAILURE_STATUS_CODE = 599;
 
@@ -72,6 +99,7 @@ class OpenapiValidationIT {
         System.out.println("Container logs (tag " + imageTag + "):");
         System.out.println(appContainer.getLogs());
         appContainer.stop();
+        appContainer.close();
     }
 
     @Test

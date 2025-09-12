@@ -34,7 +34,7 @@ function expand_versions
     current="$1"
 
     if [[ "${PROJECT_VERSION}" =~ -SNAPSHOT$ ]]; then
-        result+=($current snapshot)
+        result+=($current)
     else
         while [[ "$current" =~ \. ]]; do
             result+=($current);

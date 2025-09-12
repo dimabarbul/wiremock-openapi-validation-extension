@@ -179,6 +179,10 @@
           <version>3.7.1</version>
         </plugin>
         <plugin>
+          <artifactId>maven-resources-plugin</artifactId>
+          <version>3.3.1</version>
+        </plugin>
+        <plugin>
           <artifactId>maven-release-plugin</artifactId>
           <version>3.1.1</version>
         </plugin>
@@ -208,6 +212,13 @@
         </plugin>
       </plugins>
     </pluginManagement>
+
+    <testResources>
+      <testResource>
+        <directory>src/test/resources</directory>
+        <filtering>true</filtering>
+      </testResource>
+    </testResources>
 
     <plugins>
       <plugin>
